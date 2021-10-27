@@ -78,7 +78,7 @@
             _instance = new Settings(PackageName);
 
             _playModeSetting = new UserSetting<StrippingMode>(_instance, nameof(_playModeSetting),
-                StrippingMode.PrependWithFolderName, SettingsScope.User);
+                StrippingMode.DoNothing, SettingsScope.User);
 
             _buildSetting = new UserSetting<StrippingMode>(_instance, nameof(_buildSetting),
                 StrippingMode.PrependWithFolderName, SettingsScope.User);
