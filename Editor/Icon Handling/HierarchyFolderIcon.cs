@@ -17,9 +17,9 @@ namespace UnityHierarchyFolders.Editor
 #if UNITY_2020_1_OR_NEWER
         private const string _openedFolderPrefix = "FolderOpened";
 #else
-        private const string _openedFolderPrefix = "OpenedFolder";
+        private const string _openedFolderPrefix = "d_FolderOpened";
 #endif
-        private const string _closedFolderPrefix = "Folder";
+        private const string _closedFolderPrefix = "d_Folder";
 
         private static Texture2D _openFolderTexture;
         private static Texture2D _closedFolderTexture;
@@ -80,11 +80,25 @@ namespace UnityHierarchyFolders.Editor
             _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon").image;
             _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_closedFolderPrefix} Icon").image;
 
+            if (_openFolderTexture == null)
+            {
+                Debug.LogError("_openFolderTexture is null.");
+                return;
+            }
+
+            if (_closedFolderTexture == null)
+            {
+                Debug.LogError("_closedFolderTexture is null.");
+                return;
+            }
+
             // We could use the actual white folder icons but I prefer the look of the tinted white folder icon
             // To use the actual white version:
             // texture = (Texture2D) EditorGUIUtility.IconContent($"{OpenedFolderPrefix | ClosedFolderPrefix} On Icon").image;
             _openFolderSelectedTexture = TextureHelper.GetWhiteTexture(_openFolderTexture, $"{_openedFolderPrefix} Icon White");
             _closedFolderSelectedTexture = TextureHelper.GetWhiteTexture(_closedFolderTexture, $"{_closedFolderPrefix} Icon White");
+            
+            
 
             _coloredFolderIcons = new (Texture2D, Texture2D)[] { (_openFolderTexture, _closedFolderTexture) };
 
