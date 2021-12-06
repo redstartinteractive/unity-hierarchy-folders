@@ -77,8 +77,18 @@ namespace UnityHierarchyFolders.Editor
         {
             if (_isInitialized) { return; }
 
-            _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon").image;
-            _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_closedFolderPrefix} Icon").image;
+
+            //use fallback texture
+            if (EditorGUIUtility.IconContent($"FolderEmpty Icon") != null)
+                _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"FolderEmpty Icon").image;
+            else if(EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon") != null)
+                _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon").image;
+
+            if (EditorGUIUtility.IconContent($"Folder Icon") != null)
+                _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"Folder Icon").image;
+            else
+                _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_closedFolderPrefix} Icon").image;
+
 
             if (_openFolderTexture == null)
             {
