@@ -81,7 +81,7 @@
                 StrippingMode.DoNothing, SettingsScope.User);
 
             _buildSetting = new UserSetting<StrippingMode>(_instance, nameof(_buildSetting),
-                StrippingMode.PrependWithFolderName, SettingsScope.User);
+                StrippingMode.Delete, SettingsScope.User);
 
             _capitalizeName = new UserSetting<bool>(_instance, nameof(_capitalizeName), true, SettingsScope.User);
 

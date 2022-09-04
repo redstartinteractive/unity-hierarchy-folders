@@ -208,11 +208,6 @@ namespace UnityHierarchyFolders.Runtime
                 if (child.parent != this.transform)
                     continue;
 
-                if (strippingMode == StrippingMode.PrependWithFolderName)
-                {
-                    child.name = $"{this.name}/{child.name}";
-                }
-
                 child.SetParent(this.transform.parent, true);
                 child.SetSiblingIndex(++index);
             }

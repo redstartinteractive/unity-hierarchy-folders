@@ -89,7 +89,7 @@
         private static bool TypeCanBeInBuild(Enum enumValue)
         {
             var mode = (StrippingMode) enumValue;
-            return mode == StrippingMode.PrependWithFolderName || mode == StrippingMode.Delete;
+            return mode == StrippingMode.Delete;
         }
 
         /// <summary>
