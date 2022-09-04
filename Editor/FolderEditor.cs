@@ -8,13 +8,10 @@ namespace UnityHierarchyFolders.Editor
     [CustomEditor(typeof(Folder))]
     public class FolderEditor : UnityEditor.Editor
     {
-        private bool _expanded = false;
-
         public override bool RequiresConstantRepaint() => true;
         public override void OnInspectorGUI()
         {
-            this._expanded = EditorGUILayout.Foldout(this._expanded, "Icon Color", true);
-            if (this._expanded) { this.RenderColorPicker(); }
+            this.RenderColorPicker();
         }
 
         private void RenderColorPicker()
@@ -24,7 +21,7 @@ namespace UnityHierarchyFolders.Editor
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            float buttonSize = 25f;
+            float buttonSize = 28f;
 
             var gridRect = EditorGUILayout.GetControlRect(false, buttonSize * HierarchyFolderIcon.IconRowCount,
                 GUILayout.Width(buttonSize * HierarchyFolderIcon.IconColumnCount));
