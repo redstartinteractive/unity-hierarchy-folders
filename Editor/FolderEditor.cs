@@ -6,9 +6,9 @@ using UnityHierarchyFolders.Runtime;
 namespace UnityHierarchyFolders.Editor
 {
     [CustomEditor(typeof(Folder))]
+    [CanEditMultipleObjects]
     public class FolderEditor : UnityEditor.Editor
     {
-        public override bool RequiresConstantRepaint() => true;
         public override void OnInspectorGUI()
         {
             this.RenderColorPicker();
