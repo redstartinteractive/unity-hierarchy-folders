@@ -6,7 +6,7 @@
 
     internal static class StripSettings
     {
-        private const string PackageName = "com.xsduan.hierarchy-folders";
+        private const string PackageName = "io.redstart.hierarchy-folders";
 
         private static Settings _instance;
         private static UserSetting<StrippingMode> _playModeSetting;
