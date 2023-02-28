@@ -6,12 +6,15 @@ using UnityHierarchyFolders.Runtime;
 namespace UnityHierarchyFolders.Editor
 {
     [CustomEditor(typeof(Folder))]
+    [CanEditMultipleObjects]
     public class FolderEditor : UnityEditor.Editor
     {
-        public override bool RequiresConstantRepaint() => true;
         public override void OnInspectorGUI()
         {
             this.RenderColorPicker();
+            if(Selection.count <= 1) {
+                this.RenderSelectChildrenButton();
+            }
         }
 
         private void RenderColorPicker()
@@ -68,6 +71,20 @@ namespace UnityHierarchyFolders.Editor
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(10f);
+        }
+
+        private void RenderSelectChildrenButton() 
+        {
+            if (GUILayout.Button("Select Child Objects")) 
+            {
+                Folder script = (Folder)target;
+                GameObject[] children = new GameObject[script.transform.childCount];
+                for(int i = 0; i < script.transform.childCount; i++) 
+                {
+                    children[i] = script.transform.GetChild(i).gameObject;
+                }
+                Selection.objects = children;
+            }
         }
     }
 }
