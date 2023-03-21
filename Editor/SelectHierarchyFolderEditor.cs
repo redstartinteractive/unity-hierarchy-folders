@@ -16,12 +16,13 @@ namespace Editor {
         private const float K_MAX_HEIGHT = 720f;
 
         private List<Folder> folders;
+        private List<GameObject> currentSelection;
         private ReorderableList selectableFolders;
         private Folder selectedFolder;
 
         [MenuItem("Window/Send To Hierarchy Folder")]
         public static void ShowWindow() {
-            SelectHierarchyFolderEditor window = (SelectHierarchyFolderEditor)GetWindowWithRect(typeof(SelectHierarchyFolderEditor), new Rect(0, 0, K_MIN_WIDTH, K_MIN_HEIGHT), false, "Hierarchy folders");
+            SelectHierarchyFolderEditor window = (SelectHierarchyFolderEditor)GetWindowWithRect(typeof(SelectHierarchyFolderEditor), new Rect(0, 0, K_MIN_WIDTH, K_MIN_HEIGHT), false, "Send To folders");
             window.minSize = new Vector2(K_MIN_WIDTH, K_MIN_HEIGHT);
             window.maxSize = new Vector2(K_MAX_WIDTH, K_MAX_HEIGHT);
             window.Show();
@@ -29,6 +30,7 @@ namespace Editor {
 
         private void OnEnable() {
             folders = GetAllHierarchyFolders();
+            currentSelection = Selection.gameObjects.ToList();
             folders.Sort((f1, f2) => f1.name.CompareTo(f2.name));
             selectableFolders = new ReorderableList(folders, typeof(Folder), false, false, false, false) {
                 onSelectCallback = (element) => {
@@ -44,6 +46,23 @@ namespace Editor {
             if(selectedFolder) {
                 RenderSendToHierarchyFolderButton();
             }
+
+            GUILayout.Space(10f);
+            RenderElementsToMove();
+        }
+
+        private void RenderElementsToMove() {
+            GUIStyle titleStyle = new() {
+                fontSize = 15,
+                normal = {
+                    textColor = Color.white
+                }
+            };
+            EditorGUILayout.LabelField("Game Objects to move", titleStyle);
+            GUILayout.Space(10f);
+            for(int i = 0; i < currentSelection.Count; i++) {
+                EditorGUILayout.LabelField(EditorGUIUtility.ObjectContent(currentSelection[i], typeof(Transform)));
+            }
         }
 
         private List<Folder> GetAllHierarchyFolders() {
@@ -57,7 +76,7 @@ namespace Editor {
 
             GameObject folderGameObject = selectedFolder.gameObject;
 
-            foreach(GameObject gameObject in Selection.gameObjects) {
+            foreach(GameObject gameObject in currentSelection) {
                 Undo.SetTransformParent(gameObject.transform, folderGameObject.transform, "Send Selection To Hierarchy Folder Window");
             }
 

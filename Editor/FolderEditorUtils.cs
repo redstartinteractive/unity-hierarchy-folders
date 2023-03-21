@@ -10,7 +10,7 @@ namespace UnityHierarchyFolders.Editor {
     public static class FolderEditorUtils {
         private const string _actionNewFolder = "Create Folder %#&N";
         private const string _actionSelectionFolder = "Create Folder With Selection %#&N";
-        private const string _actionOpenSelectionHierarchyFolderWindow = "Send Selection To Hierarchy Folder Window %#&N";
+        private const string _actionOpenSelectionHierarchyFolderWindow = "Send To Folder %#&M";
 
         /// <summary>Add new folder "prefab".</summary>
         /// <param name="command">Menu command information.</param>
