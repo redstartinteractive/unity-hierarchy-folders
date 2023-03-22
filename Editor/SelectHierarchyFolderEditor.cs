@@ -4,12 +4,12 @@ using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityHierarchyFolders.Editor;
 using UnityHierarchyFolders.Runtime;
 
-namespace Editor {
-    public class SelectHierarchyFolderEditor : EditorWindow {
+namespace UnityHierarchyFolders.Editor
+{
+    public class SelectHierarchyFolderEditor : EditorWindow
+    {
         private const float K_MIN_WIDTH = 720f;
         private const float K_MAX_WIDTH = 1280f;
         private const float K_MIN_HEIGHT = 405f;
