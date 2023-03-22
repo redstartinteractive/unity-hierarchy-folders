@@ -1,5 +1,4 @@
-﻿#if UNITY_2019_1_OR_NEWER
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using UnityHierarchyFolders.Runtime;
 
@@ -12,7 +11,8 @@ namespace UnityHierarchyFolders.Editor
         public override void OnInspectorGUI()
         {
             this.RenderColorPicker();
-            if(Selection.count <= 1) {
+            if(Selection.count <= 1)
+            {
                 this.RenderSelectChildrenButton();
             }
         }
@@ -30,9 +30,9 @@ namespace UnityHierarchyFolders.Editor
                 GUILayout.Width(buttonSize * HierarchyFolderIcon.IconColumnCount));
 
             int currentIndex = colorIndexProperty.intValue;
-            for (int row = 0; row < HierarchyFolderIcon.IconRowCount; row++)
+            for(int row = 0; row < HierarchyFolderIcon.IconRowCount; row++)
             {
-                for (int column = 0; column < HierarchyFolderIcon.IconColumnCount; column++)
+                for(int column = 0; column < HierarchyFolderIcon.IconColumnCount; column++)
                 {
                     int index = 1 + column + row * HierarchyFolderIcon.IconColumnCount;
                     float width = gridRect.width / HierarchyFolderIcon.IconColumnCount;
@@ -40,14 +40,13 @@ namespace UnityHierarchyFolders.Editor
                     var rect = new Rect(gridRect.x + width * column, gridRect.y + height * row, width, height);
                     (var openIcon, var closeIcon) = HierarchyFolderIcon.ColoredFolderIcons(index);
 
-                    if (Event.current.type == EventType.Repaint)
+                    if(Event.current.type == EventType.Repaint)
                     {
-                        if (index == currentIndex)
+                        if(index == currentIndex)
                         {
                             GUIStyle hover = "TV Selection";
                             hover.Draw(rect, false, false, false, false);
-                        }
-                        else if (rect.Contains(Event.current.mousePosition))
+                        } else if(rect.Contains(Event.current.mousePosition))
                         {
                             GUI.backgroundColor = new Color(.7f, .7f, .7f, 1f);
                             GUIStyle white = "WhiteBackground";
@@ -56,7 +55,7 @@ namespace UnityHierarchyFolders.Editor
                         }
                     }
 
-                    if (GUI.Button(rect, currentIndex == index ? openIcon : closeIcon, EditorStyles.label))
+                    if(GUI.Button(rect, currentIndex == index ? openIcon : closeIcon, EditorStyles.label))
                     {
                         Undo.RecordObject(this.target, "Set Folder Color");
                         colorIndexProperty.intValue = currentIndex == index ? 0 : index;
@@ -73,19 +72,19 @@ namespace UnityHierarchyFolders.Editor
             GUILayout.Space(10f);
         }
 
-        private void RenderSelectChildrenButton() 
+        private void RenderSelectChildrenButton()
         {
-            if (GUILayout.Button("Select Child Objects")) 
+            if(GUILayout.Button("Select Child Objects"))
             {
                 Folder script = (Folder)target;
                 GameObject[] children = new GameObject[script.transform.childCount];
-                for(int i = 0; i < script.transform.childCount; i++) 
+                for(int i = 0; i < script.transform.childCount; i++)
                 {
                     children[i] = script.transform.GetChild(i).gameObject;
                 }
+
                 Selection.objects = children;
             }
         }
     }
 }
-#endif

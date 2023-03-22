@@ -5,17 +5,18 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityHierarchyFolders.Runtime;
 
-namespace UnityHierarchyFolders.Editor
+namespace UnityHierarchyFolders.Editor 
 {
-    public static class FolderEditorUtils
+    public static class FolderEditorUtils 
     {
         private const string _actionNewFolder = "Create Folder %#&N";
         private const string _actionSelectionFolder = "Create Folder With Selection %#&N";
+        private const string _actionSendToFolderWindow = "Send To Folder %#&M";
 
         /// <summary>Add new folder "prefab".</summary>
         /// <param name="command">Menu command information.</param>
         [MenuItem("GameObject/" + _actionNewFolder, isValidateFunction: false, priority: 0)]
-        public static void AddFolderPrefab(MenuCommand command)
+        public static void AddFolderPrefab(MenuCommand command) 
         {
             var obj = new GameObject { name = "Folder" };
             obj.AddComponent<Folder>();
@@ -23,7 +24,7 @@ namespace UnityHierarchyFolders.Editor
             GameObjectUtility.SetParentAndAlign(obj, (GameObject)command.context);
             Undo.RegisterCreatedObjectUndo(obj, _actionNewFolder);
         }
-        
+
         [MenuItem("GameObject/" + _actionNewFolder, isValidateFunction: true, priority: 0)]
         public static bool AddFolderPrefabValidate(MenuCommand command) 
         {
@@ -35,22 +36,23 @@ namespace UnityHierarchyFolders.Editor
         [MenuItem("GameObject/" + _actionSelectionFolder, isValidateFunction: false, priority: 0)]
         public static void AddFolderWithSelection(MenuCommand command) 
         {
-            if (Selection.objects.Length > 1)
+            if(Selection.objects.Length > 1) 
             {
-                if (command.context != Selection.objects[0])
+                if(command.context != Selection.objects[0]) 
                 {
                     return;
                 }
             }
-            
+
             var obj = new GameObject { name = "Folder" };
             obj.AddComponent<Folder>();
 
             GameObject parentGo = (GameObject)command.context;
-            if(parentGo.transform.parent) {
-                GameObjectUtility.SetParentAndAlign(obj, parentGo.transform.parent.gameObject);    
+            if(parentGo.transform.parent) 
+            {
+                GameObjectUtility.SetParentAndAlign(obj, parentGo.transform.parent.gameObject);
             }
-            
+
             Undo.RegisterCreatedObjectUndo(obj, _actionSelectionFolder);
 
             foreach(GameObject go in Selection.gameObjects) 
@@ -64,17 +66,39 @@ namespace UnityHierarchyFolders.Editor
         {
             return Selection.objects.Length > 0;
         }
+
+        /// <summary>Add new folder "prefab".</summary>
+        /// <param name="command">Menu command information.</param>
+        [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: false, priority: 0)]
+        public static void SendToFolder(MenuCommand command)
+        {
+            if(Selection.objects.Length > 1) 
+            {
+                if(command.context != Selection.objects[0]) 
+                {
+                    return;
+                }
+            }
+
+            SelectHierarchyFolderEditor.ShowWindow();
+        }
+
+        [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: true, priority: 0)]
+        public static bool SendToFolderValidate(MenuCommand command) 
+        {
+            return Selection.objects.Length > 0 && Object.FindObjectsOfType<Folder>().Length > 0;
+        }
     }
 
-    public class FolderOnBuild : IProcessSceneWithReport
+    public class FolderOnBuild : IProcessSceneWithReport 
     {
         public int callbackOrder => 0;
 
-        public void OnProcessScene(Scene scene, BuildReport report)
+        public void OnProcessScene(Scene scene, BuildReport report) 
         {
             var strippingMode = report == null ? StripSettings.PlayMode : StripSettings.Build;
 
-            foreach (var folder in Object.FindObjectsOfType<Folder>())
+            foreach(var folder in Object.FindObjectsOfType<Folder>()) 
             {
                 folder.Flatten(strippingMode, StripSettings.CapitalizeName);
             }
