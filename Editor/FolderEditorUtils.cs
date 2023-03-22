@@ -11,7 +11,7 @@ namespace UnityHierarchyFolders.Editor
     {
         private const string _actionNewFolder = "Create Folder %#&N";
         private const string _actionSelectionFolder = "Create Folder With Selection %#&N";
-        private const string _actionOpenSelectionHierarchyFolderWindow = "Send To Folder %#&M";
+        private const string _actionSendToFolderWindow = "Send To Folder %#&M";
 
         /// <summary>Add new folder "prefab".</summary>
         /// <param name="command">Menu command information.</param>
@@ -69,8 +69,8 @@ namespace UnityHierarchyFolders.Editor
 
         /// <summary>Add new folder "prefab".</summary>
         /// <param name="command">Menu command information.</param>
-        [MenuItem("GameObject/" + _actionOpenSelectionHierarchyFolderWindow, isValidateFunction: false, priority: 0)]
-        public static void SendSelectionToHierarchyFolder(MenuCommand command)
+        [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: false, priority: 0)]
+        public static void SendToFolder(MenuCommand command)
         {
             if(Selection.objects.Length > 1) 
             {
@@ -83,8 +83,8 @@ namespace UnityHierarchyFolders.Editor
             SelectHierarchyFolderEditor.ShowWindow();
         }
 
-        [MenuItem("GameObject/" + _actionOpenSelectionHierarchyFolderWindow, isValidateFunction: true, priority: 0)]
-        public static bool SendSelectionToHierarchyFolderValidate(MenuCommand command) 
+        [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: true, priority: 0)]
+        public static bool SendToFolderValidate(MenuCommand command) 
         {
             return Selection.objects.Length > 0 && Object.FindObjectsOfType<Folder>().Length > 0;
         }
