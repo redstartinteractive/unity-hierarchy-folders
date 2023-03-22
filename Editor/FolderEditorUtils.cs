@@ -74,6 +74,7 @@ namespace UnityHierarchyFolders.Editor {
         [MenuItem("GameObject/" + _actionOpenSelectionHierarchyFolderWindow, isValidateFunction: true, priority: 0)]
         public static bool SendSelectionToHierarchyFolderValidate(MenuCommand command) {
             return Selection.objects.Length > 0;
+            return Selection.objects.Length > 0 && Object.FindObjectsOfType<Folder>().Length > 0;
         }
     }
 
