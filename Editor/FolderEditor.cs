@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using UnityHierarchyFolders.Runtime;
+using System.Collections.Generic;
 
 namespace UnityHierarchyFolders.Editor
 {
@@ -11,10 +12,7 @@ namespace UnityHierarchyFolders.Editor
         public override void OnInspectorGUI()
         {
             this.RenderColorPicker();
-            if(Selection.count <= 1)
-            {
-                this.RenderSelectChildrenButton();
-            }
+            this.RenderSelectChildrenButton();
         }
 
         private void RenderColorPicker()
@@ -76,14 +74,17 @@ namespace UnityHierarchyFolders.Editor
         {
             if(GUILayout.Button("Select Child Objects"))
             {
-                Folder script = (Folder)target;
-                GameObject[] children = new GameObject[script.transform.childCount];
-                for(int i = 0; i < script.transform.childCount; i++)
+                List<GameObject> allObjects = new();
+                for(int i = 0; i < targets.Length; i++)
                 {
-                    children[i] = script.transform.GetChild(i).gameObject;
+                    Folder script = (Folder)targets[i];
+                    for(int j = 0; j < script.transform.childCount; j++)
+                    {
+                        allObjects.Add(script.transform.GetChild(j).gameObject);
+                    }
                 }
 
-                Selection.objects = children;
+                Selection.objects = allObjects.ToArray();
             }
         }
     }
