@@ -16,8 +16,8 @@ namespace UnityHierarchyFolders.Editor {
         private ReorderableList selectableFolders;
         private Folder selectedFolder;
         private GUIStyle titleStyle;
-        Vector2 scrollPosFolders = Vector2.zero;
-        Vector2 scrollPosObjects = Vector2.zero;
+        private Vector2 scrollPosFolders = Vector2.zero;
+        private Vector2 scrollPosObjects = Vector2.zero;
         private Color defaultColor;
 
         public static void ShowWindow() {
@@ -28,7 +28,7 @@ namespace UnityHierarchyFolders.Editor {
 
         private void OnEnable() {
             defaultColor = GUI.backgroundColor;
-            titleStyle = new() {
+            titleStyle = new GUIStyle {
                 fontSize = 14,
                 normal = {
                     textColor = Color.white
@@ -42,12 +42,10 @@ namespace UnityHierarchyFolders.Editor {
                     selectedFolder = folders[element.index];
                     EditorGUIUtility.PingObject(selectedFolder.gameObject);
                     Event e = Event.current;
-                    if(e.clickCount >= 2) {
-                        SendToFolder();
-                    }
+                    if(e.clickCount >= 2) SendToFolder();
                 },
 
-                drawElementCallback = (rect, index, active, focused) => { EditorGUI.LabelField(rect, EditorGUIUtility.ObjectContent(folders[index], typeof(Transform))); },
+                drawElementCallback = (rect, index, active, focused) => { EditorGUI.LabelField(rect, EditorGUIUtility.ObjectContent(folders[index], typeof(Transform))); }
             };
         }
 
@@ -62,49 +60,38 @@ namespace UnityHierarchyFolders.Editor {
 
         private void RenderSelectButton() {
             EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(10f);
 
             GUI.backgroundColor = new Color32(110, 200, 255, 255);
 
-            if(!selectedFolder) {
-                GUI.enabled = false;
-            }
+            if(!selectedFolder) GUI.enabled = false;
 
-            if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
-                SendToFolder();
-            }
+            if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) SendToFolder();
 
             GUI.enabled = true;
             GUI.backgroundColor = defaultColor;
             EditorGUILayout.EndHorizontal();
         }
 
-
-        private void RenderFolders() {
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.LabelField("Select a Folder", titleStyle, GUILayout.Height(30), GUILayout.Width(100));
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(position.width * 2 / 3));
-            scrollPosFolders = EditorGUILayout.BeginScrollView(scrollPosFolders);
-            selectableFolders.DoLayoutList();
-            EditorGUILayout.EndScrollView();
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.EndVertical();
-        }
-
         private void RenderElementsToMove() {
-            EditorGUILayout.BeginHorizontal(GUILayout.Width(position.width / 3));
             EditorGUILayout.BeginVertical();
 
             EditorGUILayout.LabelField("GameObjects to Move", titleStyle);
             GUILayout.Space(10f);
+
             scrollPosObjects = EditorGUILayout.BeginScrollView(scrollPosObjects);
-            for(int i = 0; i < currentSelection.Count; i++) {
-                EditorGUILayout.LabelField(EditorGUIUtility.ObjectContent(currentSelection[i], typeof(Transform)));
-            }
+            for(int i = 0; i < currentSelection.Count; i++) EditorGUILayout.LabelField(EditorGUIUtility.ObjectContent(currentSelection[i], typeof(Transform)));
 
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndScrollView();
-            EditorGUILayout.EndHorizontal();
+        }
+
+        private void RenderFolders() {
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.LabelField("Select a Folder", titleStyle, GUILayout.Height(30), GUILayout.Width(100));
+            scrollPosFolders = EditorGUILayout.BeginScrollView(scrollPosFolders);
+            selectableFolders.DoLayoutList();
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndVertical();
         }
 
         private List<Folder> GetAllHierarchyFolders() {
@@ -112,9 +99,7 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         private void SendToFolder() {
-            foreach(GameObject gameObject in currentSelection) {
-                Undo.SetTransformParent(gameObject.transform, selectedFolder.transform, "Send To Folder");
-            }
+            foreach(GameObject gameObject in currentSelection) Undo.SetTransformParent(gameObject.transform, selectedFolder.transform, "Send To Folder");
 
             Close();
         }
