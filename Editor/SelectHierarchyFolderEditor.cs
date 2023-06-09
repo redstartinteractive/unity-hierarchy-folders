@@ -20,7 +20,6 @@ namespace UnityHierarchyFolders.Editor {
         Vector2 scrollPosObjects = Vector2.zero;
         private Color defaultColor;
 
-        /*[MenuItem("Window/Send To Hierarchy Folder")]*/
         public static void ShowWindow() {
             SelectHierarchyFolderEditor window = (SelectHierarchyFolderEditor)GetWindow(typeof(SelectHierarchyFolderEditor), false, "Send To Folder");
             window.minSize = new Vector2(K_MIN_WIDTH, K_MIN_HEIGHT);
@@ -66,19 +65,16 @@ namespace UnityHierarchyFolders.Editor {
             GUILayout.Space(10f);
 
             GUI.backgroundColor = new Color32(110, 200, 255, 255);
-            if(selectedFolder) {
-                if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
-                    SendToFolder();
-                }
-            } else {
-                GUI.enabled = false;
-                if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
-                    // Nothing
-                }
 
-                GUI.enabled = true;
+            if(!selectedFolder) {
+                GUI.enabled = false;
             }
 
+            if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
+                SendToFolder();
+            }
+
+            GUI.enabled = true;
             GUI.backgroundColor = defaultColor;
             EditorGUILayout.EndHorizontal();
         }
@@ -116,9 +112,8 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         private void SendToFolder() {
-            GameObject folderGameObject = selectedFolder.gameObject;
             foreach(GameObject gameObject in currentSelection) {
-                Undo.SetTransformParent(gameObject.transform, folderGameObject.transform, "Send To Folder");
+                Undo.SetTransformParent(gameObject.transform, selectedFolder.transform, "Send To Folder");
             }
 
             Close();
