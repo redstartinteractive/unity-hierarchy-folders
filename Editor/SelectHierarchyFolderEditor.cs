@@ -47,7 +47,7 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         private void OnGUI() {
-            RenderHeading();
+            RenderSelectButton();
 
             EditorGUILayout.BeginHorizontal();
             RenderElementsToMove();
@@ -55,9 +55,10 @@ namespace UnityHierarchyFolders.Editor {
             EditorGUILayout.EndHorizontal();
         }
 
-        private void RenderHeading() {
+        private void RenderSelectButton() {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(10f);
+
             if(selectedFolder) {
                 if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
                     GameObject folderGameObject = selectedFolder.gameObject;
@@ -67,6 +68,13 @@ namespace UnityHierarchyFolders.Editor {
 
                     Close();
                 }
+            } else {
+                GUI.enabled = false;
+                if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
+                    // Nothing
+                }
+
+                GUI.enabled = true;
             }
 
             EditorGUILayout.EndHorizontal();
