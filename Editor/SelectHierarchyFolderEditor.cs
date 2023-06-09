@@ -6,10 +6,8 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityHierarchyFolders.Runtime;
 
-namespace UnityHierarchyFolders.Editor
-{
-    public class SelectHierarchyFolderEditor : EditorWindow
-    {
+namespace UnityHierarchyFolders.Editor {
+    public class SelectHierarchyFolderEditor : EditorWindow {
         private const float K_MIN_WIDTH = 320f;
         private const float K_MIN_HEIGHT = 200f;
 
@@ -18,18 +16,17 @@ namespace UnityHierarchyFolders.Editor
         private ReorderableList selectableFolders;
         private Folder selectedFolder;
         private GUIStyle titleStyle;
-        Vector2 scrollPos = Vector2.zero;
+        Vector2 scrollPosFolders = Vector2.zero;
+        Vector2 scrollPosObjects = Vector2.zero;
 
         [MenuItem("Window/Send To Hierarchy Folder")]
-        public static void ShowWindow() 
-        {
+        public static void ShowWindow() {
             SelectHierarchyFolderEditor window = (SelectHierarchyFolderEditor)GetWindow(typeof(SelectHierarchyFolderEditor), false, "Send To Folder");
             window.minSize = new Vector2(K_MIN_WIDTH, K_MIN_HEIGHT);
             window.Show();
         }
 
-        private void OnEnable() 
-        {
+        private void OnEnable() {
             titleStyle = new() {
                 fontSize = 14,
                 normal = {
@@ -39,63 +36,71 @@ namespace UnityHierarchyFolders.Editor
             folders = GetAllHierarchyFolders();
             currentSelection = Selection.gameObjects.ToList();
             folders.Sort((f1, f2) => f1.name.CompareTo(f2.name));
-            selectableFolders = new ReorderableList(folders, typeof(Folder), false, false, false, false) 
-            {
-                onSelectCallback = (element) => 
-                {
+            selectableFolders = new ReorderableList(folders, typeof(Folder), false, false, false, false) {
+                onSelectCallback = (element) => {
                     selectedFolder = folders[element.index];
                     EditorGUIUtility.PingObject(selectedFolder.gameObject);
                 },
-                
-                drawElementCallback = (rect, index, active, focused) => 
-                {
-                    EditorGUI.LabelField(rect, EditorGUIUtility.ObjectContent(folders[index], typeof(Transform)));
-                }
+
+                drawElementCallback = (rect, index, active, focused) => { EditorGUI.LabelField(rect, EditorGUIUtility.ObjectContent(folders[index], typeof(Transform))); }
             };
         }
 
-        private void OnGUI() 
-        {
-            scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+        private void OnGUI() {
             RenderHeading();
-            selectableFolders.DoLayoutList();
+
+            EditorGUILayout.BeginHorizontal();
             RenderElementsToMove();
-            EditorGUILayout.EndScrollView();
+            RenderFolders();
+            EditorGUILayout.EndHorizontal();
         }
 
-        private void RenderHeading() 
-        {
+        private void RenderHeading() {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Select a Folder", titleStyle, GUILayout.Height(30), GUILayout.Width(100));
             GUILayout.Space(10f);
-            if(selectedFolder) 
-            {
-                if(GUILayout.Button("Send To Folder", GUILayout.Height(30)))
-                {
+            if(selectedFolder) {
+                if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
                     GameObject folderGameObject = selectedFolder.gameObject;
-                    foreach(GameObject gameObject in currentSelection) 
-                    {
+                    foreach(GameObject gameObject in currentSelection) {
                         Undo.SetTransformParent(gameObject.transform, folderGameObject.transform, "Send To Folder");
                     }
 
                     Close();
                 }
             }
+
             EditorGUILayout.EndHorizontal();
         }
 
-        private void RenderElementsToMove() 
-        {
+
+        private void RenderFolders() {
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.LabelField("Select a Folder", titleStyle, GUILayout.Height(30), GUILayout.Width(100));
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(position.width * 2 / 3));
+            scrollPosFolders = EditorGUILayout.BeginScrollView(scrollPosFolders);
+            selectableFolders.DoLayoutList();
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private void RenderElementsToMove() {
+            EditorGUILayout.BeginHorizontal(GUILayout.Width(position.width / 3));
+            EditorGUILayout.BeginVertical();
+
             EditorGUILayout.LabelField("GameObjects to Move", titleStyle);
             GUILayout.Space(10f);
-            for(int i = 0; i < currentSelection.Count; i++) 
-            {
+            scrollPosObjects = EditorGUILayout.BeginScrollView(scrollPosObjects);
+            for(int i = 0; i < currentSelection.Count; i++) {
                 EditorGUILayout.LabelField(EditorGUIUtility.ObjectContent(currentSelection[i], typeof(Transform)));
             }
+
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndHorizontal();
         }
-        
-        private List<Folder> GetAllHierarchyFolders() 
-        {
+
+        private List<Folder> GetAllHierarchyFolders() {
             return FindObjectsOfType<Folder>().ToList();
         }
     }
