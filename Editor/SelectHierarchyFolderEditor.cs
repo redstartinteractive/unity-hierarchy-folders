@@ -18,6 +18,7 @@ namespace UnityHierarchyFolders.Editor {
         private GUIStyle titleStyle;
         Vector2 scrollPosFolders = Vector2.zero;
         Vector2 scrollPosObjects = Vector2.zero;
+        private Color defaultColor;
 
         [MenuItem("Window/Send To Hierarchy Folder")]
         public static void ShowWindow() {
@@ -27,6 +28,7 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         private void OnEnable() {
+            defaultColor = GUI.backgroundColor;
             titleStyle = new() {
                 fontSize = 14,
                 normal = {
@@ -59,6 +61,7 @@ namespace UnityHierarchyFolders.Editor {
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(10f);
 
+            GUI.backgroundColor = new Color32(110, 200, 255, 255);
             if(selectedFolder) {
                 if(GUILayout.Button("Send To Folder", GUILayout.Height(30))) {
                     GameObject folderGameObject = selectedFolder.gameObject;
@@ -77,6 +80,7 @@ namespace UnityHierarchyFolders.Editor {
                 GUI.enabled = true;
             }
 
+            GUI.backgroundColor = defaultColor;
             EditorGUILayout.EndHorizontal();
         }
 
