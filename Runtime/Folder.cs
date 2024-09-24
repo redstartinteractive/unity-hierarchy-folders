@@ -161,7 +161,6 @@ namespace UnityHierarchyFolders.Runtime
         /// Hide inspector to prevent accidental editing of transform.
         /// </summary>
         private void OnEnable() => this.transform.hideFlags = HideFlags.HideInInspector;
-#endif
 
         /// <summary>
         /// Resets the transform properties to their identities, i.e. (0, 0, 0), (0˚, 0˚, 0˚), and (100%, 100%, 100%).
@@ -172,15 +171,14 @@ namespace UnityHierarchyFolders.Runtime
             this.transform.rotation = Quaternion.identity;
             this.transform.localScale = new Vector3(1, 1, 1);
 
-#if UNITY_EDITOR
             if (!Application.IsPlaying(this.gameObject))
             {
                 this.AddFolderData();
             }
 
             this.EnsureExclusiveComponent();
-#endif
         }
+#endif
 
         /// <summary>Takes direct children and links them to the parent transform or global.</summary>
         /// <param name="strippingMode">Stripping mode to apply.</param>
