@@ -72,19 +72,35 @@ namespace UnityHierarchyFolders.Editor
 
         private void RenderSelectChildrenButton()
         {
-            if(GUILayout.Button("Select Child Objects"))
+            if (GUILayout.Button("Select Child Objects"))
             {
                 List<GameObject> allObjects = new();
-                for(int i = 0; i < targets.Length; i++)
+
+                foreach (var target in targets)
                 {
-                    Folder script = (Folder)targets[i];
-                    for(int j = 0; j < script.transform.childCount; j++)
-                    {
-                        allObjects.Add(script.transform.GetChild(j).gameObject);
-                    }
+                    Folder script = (Folder)target;
+                    SelectChildrenRecursive(script.transform, allObjects);
                 }
 
                 Selection.objects = allObjects.ToArray();
+            }
+        }
+
+        private void SelectChildrenRecursive(Transform parent, List<GameObject> allObjects)
+        {
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform child = parent.GetChild(i);
+
+                // If the child is a Folder, recurse into it but do not add it to the selection
+                if (child.TryGetComponent<Folder>(out _))
+                {
+                    SelectChildrenRecursive(child, allObjects);
+                }
+                else
+                {
+                    allObjects.Add(child.gameObject);
+                }
             }
         }
     }

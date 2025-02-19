@@ -95,7 +95,7 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         private List<Folder> GetAllHierarchyFolders() {
-            return FindObjectsOfType<Folder>().ToList();
+            return FindObjectsByType<Folder>(FindObjectsInactive.Include, FindObjectsSortMode.None).ToList();
         }
 
         private void SendToFolder() {

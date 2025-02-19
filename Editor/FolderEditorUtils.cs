@@ -25,12 +25,6 @@ namespace UnityHierarchyFolders.Editor
             Undo.RegisterCreatedObjectUndo(obj, _actionNewFolder);
         }
 
-        [MenuItem("GameObject/" + _actionNewFolder, isValidateFunction: true, priority: 0)]
-        public static bool AddFolderPrefabValidate(MenuCommand command) 
-        {
-            return Selection.objects.Length <= 0;
-        }
-
         /// <summary>Add new folder "prefab" and place selected objects inside it as children.</summary>
         /// <param name="command">Menu command information.</param>
         [MenuItem("GameObject/" + _actionSelectionFolder, isValidateFunction: false, priority: 0)]
@@ -86,7 +80,7 @@ namespace UnityHierarchyFolders.Editor
         [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: true, priority: 0)]
         public static bool SendToFolderValidate(MenuCommand command) 
         {
-            return Selection.objects.Length > 0 && Object.FindObjectsOfType<Folder>().Length > 0;
+            return Selection.objects.Length > 0 && Object.FindObjectsByType<Folder>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0;
         }
     }
 
@@ -98,7 +92,7 @@ namespace UnityHierarchyFolders.Editor
         {
             var strippingMode = report == null ? StripSettings.PlayMode : StripSettings.Build;
 
-            foreach(var folder in Object.FindObjectsOfType<Folder>()) 
+            foreach(var folder in Object.FindObjectsByType<Folder>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 folder.Flatten(strippingMode, StripSettings.CapitalizeName);
             }
