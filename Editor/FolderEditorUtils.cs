@@ -9,30 +9,18 @@ namespace UnityHierarchyFolders.Editor
 {
     public static class FolderEditorUtils 
     {
-        private const string _actionNewFolder = "Create Folder %#&N";
-        private const string _actionSelectionFolder = "Create Folder With Selection %#&N";
+        private const string _actionNewFolder = "Create Folder %G";
+        private const string _actionSelectionFolder = "Move To New Folder";
         private const string _actionSendToFolderWindow = "Send To Folder %#&M";
 
-        /// <summary>Add new folder "prefab".</summary>
-        /// <param name="command">Menu command information.</param>
+        /// <summary>Add new folder "prefab". If objects are selected they will be placed inside the new folder.</summary>
         [MenuItem("GameObject/" + _actionNewFolder, isValidateFunction: false, priority: 0)]
         public static void AddFolderPrefab(MenuCommand command) 
         {
-            var obj = new GameObject { name = "Folder" };
-            obj.AddComponent<Folder>();
-
-            GameObjectUtility.SetParentAndAlign(obj, (GameObject)command.context);
-            Undo.RegisterCreatedObjectUndo(obj, _actionNewFolder);
-        }
-
-        /// <summary>Add new folder "prefab" and place selected objects inside it as children.</summary>
-        /// <param name="command">Menu command information.</param>
-        [MenuItem("GameObject/" + _actionSelectionFolder, isValidateFunction: false, priority: 0)]
-        public static void AddFolderWithSelection(MenuCommand command) 
-        {
-            if(Selection.objects.Length > 1) 
+            // Prevent running this command on each selected object individually
+            if (Selection.objects.Length > 1)
             {
-                if(command.context != Selection.objects[0]) 
+                if (command.context && command.context != Selection.objects[0])
                 {
                     return;
                 }
@@ -40,25 +28,17 @@ namespace UnityHierarchyFolders.Editor
 
             var obj = new GameObject { name = "Folder" };
             obj.AddComponent<Folder>();
+            Undo.RegisterCreatedObjectUndo(obj, _actionNewFolder);
 
-            GameObject parentGo = (GameObject)command.context;
-            if(parentGo.transform.parent) 
+            if(Selection.activeGameObject)
             {
-                GameObjectUtility.SetParentAndAlign(obj, parentGo.transform.parent.gameObject);
+                obj.transform.SetSiblingIndex(Selection.activeGameObject.transform.GetSiblingIndex() + 1);
             }
 
-            Undo.RegisterCreatedObjectUndo(obj, _actionSelectionFolder);
-
-            foreach(GameObject go in Selection.gameObjects) 
+            foreach(GameObject go in Selection.gameObjects)
             {
                 Undo.SetTransformParent(go.transform, obj.transform, _actionSelectionFolder);
             }
-        }
-
-        [MenuItem("GameObject/" + _actionSelectionFolder, isValidateFunction: true, priority: 0)]
-        public static bool AddFolderWithSelectionValidate(MenuCommand command) 
-        {
-            return Selection.objects.Length > 0;
         }
 
         /// <summary>Add new folder "prefab".</summary>
