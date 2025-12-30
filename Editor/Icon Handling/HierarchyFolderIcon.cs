@@ -21,7 +21,7 @@ namespace UnityHierarchyFolders.Editor {
         private static Texture2D _openFolderSelectedTexture;
         private static Texture2D _closedFolderSelectedTexture;
 
-        private static List<int> expandedIDs = new();
+        private static List<EntityId> expandedIDs = new();
 
         private static object treeViewState;
         private static PropertyInfo expandedIDsProperty;
@@ -152,7 +152,7 @@ namespace UnityHierarchyFolders.Editor {
             }
 
             if(expandedIDsProperty != null) {
-                expandedIDs = (List<int>)expandedIDsProperty.GetValue(treeViewState, null);
+                expandedIDs = (List<EntityId>)expandedIDsProperty.GetValue(treeViewState, null);
             }
         }
 
@@ -172,8 +172,8 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawIcon(int instanceId, Rect itemRect) {
-            GameObject gameObject = EditorUtility.InstanceIDToObject(instanceId) as GameObject;
+        private static void DrawIcon(EntityId entityId, Rect itemRect) {
+            GameObject gameObject = EditorUtility.EntityIdToObject(entityId) as GameObject;
             bool isFolder = Folder.TryGetIconIndex(gameObject, out int colorIndex);
 
             if(gameObject != null && isFolder) {
@@ -187,7 +187,7 @@ namespace UnityHierarchyFolders.Editor {
                 iconRect.x += 25f;
 #endif
 
-                bool expanded = expandedIDs.IndexOf(instanceId) != -1;
+                bool expanded = expandedIDs.IndexOf(entityId) != -1;
                 (Texture2D open, Texture2D closed) icons = ColoredFolderIcons(Mathf.Clamp(colorIndex, 0, _coloredFolderIcons.Length - 1));
                 Texture2D icon = expanded ? icons.open : icons.closed;
                 GUI.DrawTexture(iconRect, icon);
