@@ -64,7 +64,7 @@ namespace UnityHierarchyFolders.Runtime
         /// <summary>
         /// The set of folder objects.
         /// </summary>
-        public static Dictionary<int, int> folders = new Dictionary<int, int>();
+        public static Dictionary<EntityId, int> folders = new Dictionary<EntityId, int>();
 
         /// <summary>
         /// Gets the icon index associated with the specified object.
@@ -75,7 +75,7 @@ namespace UnityHierarchyFolders.Runtime
         public static bool TryGetIconIndex(UnityEngine.Object obj, out int index)
         {
             index = -1;
-            return obj && folders.TryGetValue(obj.GetInstanceID(), out index);
+            return obj && folders.TryGetValue(obj.GetEntityId(), out index);
         }
 
         /// <summary>
@@ -83,14 +83,14 @@ namespace UnityHierarchyFolders.Runtime
         /// </summary>
         /// <param name="obj">Test object.</param>
         /// <returns>Is this object a folder?</returns>
-        public static bool IsFolder(UnityEngine.Object obj) => folders.ContainsKey(obj.GetInstanceID());
+        public static bool IsFolder(UnityEngine.Object obj) => folders.ContainsKey(obj.GetEntityId());
 
         private void Start() => this.AddFolderData();
         private void OnValidate() => this.AddFolderData();
         private void OnDestroy() => this.RemoveFolderData();
 
-        private void AddFolderData() => folders[this.gameObject.GetInstanceID()] = this._colorIndex;
-        private void RemoveFolderData() => folders.Remove(this.gameObject.GetInstanceID());
+        private void AddFolderData() => folders[this.gameObject.GetEntityId()] = this._colorIndex;
+        private void RemoveFolderData() => folders.Remove(this.gameObject.GetEntityId());
 
         /// <summary>Hides all gizmos if selected to avoid accidental editing of the transform.</summary>
         private void HandleSelection()
