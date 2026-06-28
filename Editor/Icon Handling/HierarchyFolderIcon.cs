@@ -29,6 +29,14 @@ namespace UnityHierarchyFolders.Editor {
 
         private static (Texture2D open, Texture2D closed)[] _coloredFolderIcons;
         public static (Texture2D open, Texture2D closed) ColoredFolderIcons(int i) => _coloredFolderIcons[i];
+        public static Color FolderColor(int colorIndex)
+        {
+            if (colorIndex == 0) return Color.clear;
+            int i = colorIndex - 1;
+            int row = i / IconColumnCount;
+            int col = i % IconColumnCount;
+            return IconColors[col, row];
+        }
 
         public static int IconColumnCount => IconColors.GetLength(0);
         public static int IconRowCount => IconColors.GetLength(1);
@@ -48,21 +56,15 @@ namespace UnityHierarchyFolders.Editor {
         [InitializeOnLoadMethod]
         private static void Startup() {
             InitIcons();
+#if !UNITY_6000_5_OR_NEWER
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.hierarchyWindowItemOnGUI += HandleDrawIcon;
             EditorApplication.hierarchyChanged += OnHierarchyChanged;
             UpdateExpandedIDs();
+#endif
         }
 
         private static void InitIcons() {
-            // Use closed icon for now since we cannot hide the default icons
-
-            // if(EditorGUIUtility.IconContent($"FolderEmpty Icon") != null) {
-            //     _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"FolderEmpty Icon").image;
-            // } else if(EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon") != null) {
-            //     _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_openedFolderPrefix} Icon").image;
-            // }
-
             if(EditorGUIUtility.IconContent($"Folder Icon") != null) {
                 _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"Folder Icon").image;
             } else {
@@ -85,9 +87,6 @@ namespace UnityHierarchyFolders.Editor {
                 return;
             }
 
-            // We could use the actual white folder icons but I prefer the look of the tinted white folder icon
-            // To use the actual white version:
-            // texture = (Texture2D) EditorGUIUtility.IconContent($"{OpenedFolderPrefix | ClosedFolderPrefix} On Icon").image;
             _openFolderSelectedTexture = TextureHelper.GetWhiteTexture(_openFolderTexture, $"{_openedFolderPrefix} Icon White");
             _closedFolderSelectedTexture = TextureHelper.GetWhiteTexture(_closedFolderTexture, $"{_closedFolderPrefix} Icon White");
 
@@ -115,8 +114,10 @@ namespace UnityHierarchyFolders.Editor {
         }
 
         public static void ResubscribeToEvents() {
+#if !UNITY_6000_5_OR_NEWER
             EditorApplication.hierarchyWindowItemOnGUI -= HandleDrawIcon;
             EditorApplication.hierarchyWindowItemOnGUI += HandleDrawIcon;
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -164,12 +165,13 @@ namespace UnityHierarchyFolders.Editor {
             Selection.selectionChanged -= OnSelectionChanged;
             UpdateExpandedIDs();
         }
-
+#if !UNITY_6000_5_OR_NEWER
         private static void HandleDrawIcon(int instanceId, Rect itemRect) {
             if(Event.current.type == EventType.Repaint) {
                 DrawIcon(instanceId, itemRect);
             }
         }
+#endif
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void DrawIcon(EntityId entityId, Rect itemRect) {

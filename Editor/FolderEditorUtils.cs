@@ -60,7 +60,11 @@ namespace UnityHierarchyFolders.Editor
         [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: true, priority: 0)]
         public static bool SendToFolderValidate(MenuCommand command) 
         {
+#if !UNITY_6000_5_OR_NEWER
             return Selection.objects.Length > 0 && Object.FindObjectsByType<Folder>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0;
+#else
+            return Selection.objects.Length > 0 && Object.FindObjectsByType<Folder>(FindObjectsInactive.Include).Length > 0;
+#endif
         }
     }
 
@@ -71,8 +75,11 @@ namespace UnityHierarchyFolders.Editor
         public void OnProcessScene(Scene scene, BuildReport report) 
         {
             var strippingMode = report == null ? StripSettings.PlayMode : StripSettings.Build;
-
+#if !UNITY_6000_5_OR_NEWER
             foreach(var folder in Object.FindObjectsByType<Folder>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+#else
+            foreach(var folder in Object.FindObjectsByType<Folder>(FindObjectsInactive.Include))
+#endif
             {
                 folder.Flatten(strippingMode, StripSettings.CapitalizeName);
             }
