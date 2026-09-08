@@ -32,7 +32,7 @@ namespace UnityHierarchyFolders.Editor
         private static Material GetTintMaterial(Color tint)
         {
             if (_tintMaterial == null)
-                _tintMaterial = new Material(Shader.Find("UI/Default"));
+                _tintMaterial = CreateMaterial("UI/Default");
 
             _tintMaterial.color = tint;
             return _tintMaterial;
@@ -41,10 +41,21 @@ namespace UnityHierarchyFolders.Editor
         private static Material GetColorReplaceMaterial(Color color)
         {
             if (_colorReplaceMaterial == null)
-                _colorReplaceMaterial = new Material(Shader.Find("UI/Replace color"));
+                _colorReplaceMaterial = CreateMaterial("UI/Replace color");
 
             _colorReplaceMaterial.color = color;
             return _colorReplaceMaterial;
+        }
+
+        // Shader.Find returns null when a shader fails to compile on the running Unity version
+        // (e.g. legacy fixed-function shaders). Fail loudly instead of throwing during InitializeOnLoad.
+        private static Material CreateMaterial(string shaderName)
+        {
+            var shader = Shader.Find(shaderName);
+            if (shader == null)
+                throw new Exception($"[HierarchyFolders] Shader \"{shaderName}\" could not be found or compiled.");
+
+            return new Material(shader);
         }
 
         private static Texture2D GetTextureWithMaterial(Texture2D original, Material material, string name)

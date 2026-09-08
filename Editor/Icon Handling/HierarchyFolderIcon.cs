@@ -28,7 +28,12 @@ namespace UnityHierarchyFolders.Editor {
         private static Type sceneHierarchyWindowType;
 
         private static (Texture2D open, Texture2D closed)[] _coloredFolderIcons;
-        public static (Texture2D open, Texture2D closed) ColoredFolderIcons(int i) => _coloredFolderIcons[i];
+        public static (Texture2D open, Texture2D closed) ColoredFolderIcons(int i)
+        {
+            if (_coloredFolderIcons == null || i < 0 || i >= _coloredFolderIcons.Length)
+                return default;
+            return _coloredFolderIcons[i];
+        }
         public static Color FolderColor(int colorIndex)
         {
             if (colorIndex == 0) return Color.clear;
