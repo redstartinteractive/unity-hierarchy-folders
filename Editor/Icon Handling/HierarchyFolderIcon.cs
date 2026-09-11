@@ -60,7 +60,9 @@ namespace UnityHierarchyFolders.Editor {
 
         [InitializeOnLoadMethod]
         private static void Startup() {
-            InitIcons();
+            // Shader.Find can return null for a package shader if InitIcons runs before the
+            // Editor's shader database is fully populated after a domain reload; defer one tick.
+            EditorApplication.delayCall += InitIcons;
 #if !UNITY_6000_5_OR_NEWER
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.hierarchyWindowItemOnGUI += HandleDrawIcon;
