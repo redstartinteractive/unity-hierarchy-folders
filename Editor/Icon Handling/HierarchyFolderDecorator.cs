@@ -7,18 +7,18 @@ using UnityEngine.UIElements;
 using UnityHierarchyFolders.Runtime;
 
 namespace UnityHierarchyFolders.Editor {
-#if UNITY_6000_5_OR_NEWER
     [InitializeOnLoad]
     public static class HierarchyFolderDecorator
     {
-        // Items currently styled as folders, so a preference change can restyle them without a rebind.
+        // Items currently styled as folders, so they can be restyled without waiting for a rebind.
         private static readonly Dictionary<HierarchyViewItem, HierarchyView> _decoratedItems = new();
 
         static HierarchyFolderDecorator()
         {
             HierarchyWindow.BindViewItem   += OnBindViewItem;
             HierarchyWindow.UnbindViewItem += OnUnbindViewItem;
-            DisplaySettings.Changed        += OnDisplaySettingsChanged;
+            DisplaySettings.Changed        += RedecorateAll;
+            ObjectChangeEvents.changesPublished += OnChangesPublished;
         }
 
         private static void OnBindViewItem(HierarchyWindow window, HierarchyView view, HierarchyViewItem item)
@@ -33,7 +33,26 @@ namespace UnityHierarchyFolders.Editor {
                 ClearStyle(item);
         }
 
-        private static void OnDisplaySettingsChanged()
+        // The Hierarchy doesn't rebind a row when a property changes, so a new folder color (from the inspector,
+        // undo/redo or a script) wouldn't show until the row was rebound some other way.
+        private static void OnChangesPublished(ref ObjectChangeEventStream stream)
+        {
+            for (int i = 0; i < stream.length; i++)
+            {
+                if (stream.GetEventType(i) != ObjectChangeKind.ChangeGameObjectOrComponentProperties)
+                    continue;
+
+                stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var args);
+                Object changed = EditorUtility.EntityIdToObject(args.entityId);
+                if (changed is Folder || (changed is GameObject go && go.TryGetComponent<Folder>(out _)))
+                {
+                    RedecorateAll();
+                    return;
+                }
+            }
+        }
+
+        private static void RedecorateAll()
         {
             foreach ((HierarchyViewItem item, HierarchyView view) in _decoratedItems)
             {
@@ -56,7 +75,9 @@ namespace UnityHierarchyFolders.Editor {
             {
                 bool isExpanded = view.ViewModel.HasFlags(item.Node, HierarchyNodeFlags.Expanded);
                 (Texture2D open, Texture2D closed) = HierarchyFolderIcon.ColoredFolderIcons(colorIndex);
-                item.Icon.style.backgroundImage = new StyleBackground(isExpanded ? open : closed);
+                Texture2D icon = isExpanded ? open : closed;
+                if (icon != null)
+                    item.Icon.style.backgroundImage = new StyleBackground(icon);
             }
 
             // Color index 0 means "no color": leave the row's own background alone.
@@ -76,5 +97,4 @@ namespace UnityHierarchyFolders.Editor {
             item.style.backgroundColor = StyleKeyword.Null;
         }
     }
-#endif
 }

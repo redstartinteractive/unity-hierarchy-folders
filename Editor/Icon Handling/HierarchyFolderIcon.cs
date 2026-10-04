@@ -1,50 +1,13 @@
-#if UNITY_2019_1_OR_NEWER
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
-using UnityHierarchyFolders.Runtime;
 
 namespace UnityHierarchyFolders.Editor {
+    /// <summary>The folder color palette and the folder icons tinted with it.</summary>
     public static class HierarchyFolderIcon {
-#if UNITY_2020_1_OR_NEWER
-        private const string _openedFolderPrefix = "FolderOpened";
-#else
-        private const string _openedFolderPrefix = "d_FolderOpened";
-#endif
-        private const string _closedFolderPrefix = "d_Folder";
+        private const string _folderIconName = "Folder Icon";
 
-        private static Texture2D _openFolderTexture;
-        private static Texture2D _closedFolderTexture;
-        private static Texture2D _openFolderSelectedTexture;
-        private static Texture2D _closedFolderSelectedTexture;
-
-        private static List<EntityId> expandedIDs = new();
-
-        private static object treeViewState;
-        private static PropertyInfo expandedIDsProperty;
-        private static Type sceneHierarchyWindowType;
-
+        // Index 0 is the untinted "no color" icon; index i > 0 is IconColors entry i - 1.
         private static (Texture2D open, Texture2D closed)[] _coloredFolderIcons;
-        public static (Texture2D open, Texture2D closed) ColoredFolderIcons(int i)
-        {
-            if (_coloredFolderIcons == null || i < 0 || i >= _coloredFolderIcons.Length)
-                return default;
-            return _coloredFolderIcons[i];
-        }
-        public static Color FolderColor(int colorIndex)
-        {
-            if (colorIndex == 0) return Color.clear;
-            int i = colorIndex - 1;
-            int row = i / IconColumnCount;
-            int col = i % IconColumnCount;
-            return IconColors[col, row];
-        }
-
-        public static int IconColumnCount => IconColors.GetLength(0);
-        public static int IconRowCount => IconColors.GetLength(1);
 
         private static readonly Color[,] IconColors = {
             { new(0.09f, 0.57f, 0.82f), new(0.05f, 0.34f, 0.48f) },
@@ -58,151 +21,60 @@ namespace UnityHierarchyFolders.Editor {
             { new(0.35f, 0.49f, 0.63f), new(0.24f, 0.33f, 0.42f) }
         };
 
+        public static int IconColumnCount => IconColors.GetLength(0);
+        public static int IconRowCount => IconColors.GetLength(1);
+        public static int ColorCount => IconColumnCount * IconRowCount;
+
+        /// <summary>Icons for a color index, or default if it's out of range or the icons can't be built yet.</summary>
+        public static (Texture2D open, Texture2D closed) ColoredFolderIcons(int i)
+        {
+            if (!TryInitIcons() || i < 0 || i >= _coloredFolderIcons.Length)
+                return default;
+            return _coloredFolderIcons[i];
+        }
+
+        public static Color FolderColor(int colorIndex)
+        {
+            if (colorIndex <= 0 || colorIndex > ColorCount) return Color.clear;
+            int i = colorIndex - 1;
+            return IconColors[i % IconColumnCount, i / IconColumnCount];
+        }
+
         [InitializeOnLoadMethod]
         private static void Startup() {
-            // Shader.Find can return null for a package shader if InitIcons runs before the
-            // Editor's shader database is fully populated after a domain reload; defer one tick.
-            EditorApplication.delayCall += InitIcons;
-#if !UNITY_6000_5_OR_NEWER
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            EditorApplication.hierarchyWindowItemOnGUI += HandleDrawIcon;
-            EditorApplication.hierarchyChanged += OnHierarchyChanged;
-            DisplaySettings.Changed += EditorApplication.RepaintHierarchyWindow;
-            UpdateExpandedIDs();
-#endif
+            // Shader.Find can return null for a package shader right after a domain reload; warm up a tick later.
+            // Callers also init lazily, so a failure here is retried on first use.
+            EditorApplication.delayCall += () => TryInitIcons();
         }
 
-        private static void InitIcons() {
-            if(EditorGUIUtility.IconContent($"Folder Icon") != null) {
-                _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"Folder Icon").image;
-            } else {
-                _openFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_closedFolderPrefix} Icon").image;
+        private static bool TryInitIcons() {
+            if (_coloredFolderIcons != null)
+                return true;
+
+            var folderTexture = EditorGUIUtility.FindTexture(_folderIconName);
+            if (folderTexture == null) {
+                Debug.LogError($"[HierarchyFolders] Built-in icon \"{_folderIconName}\" not found.");
+                return false;
             }
 
-            if(EditorGUIUtility.IconContent($"Folder Icon") != null) {
-                _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"Folder Icon").image;
-            } else {
-                _closedFolderTexture = (Texture2D)EditorGUIUtility.IconContent($"{_closedFolderPrefix} Icon").image;
+            Texture2D whiteTexture;
+            try {
+                whiteTexture = TextureHelper.GetWhiteTexture(folderTexture, $"{_folderIconName} White");
+            } catch (System.Exception e) {
+                Debug.LogException(e);
+                return false;
             }
 
-            if(_openFolderTexture == null) {
-                Debug.LogError("_openFolderTexture is null.");
-                return;
+            var icons = new (Texture2D, Texture2D)[1 + ColorCount];
+            icons[0] = (folderTexture, folderTexture);
+
+            for (int index = 1; index < icons.Length; index++) {
+                Texture2D tinted = TextureHelper.GetTintedTexture(whiteTexture, FolderColor(index), $"{whiteTexture.name} {index}");
+                icons[index] = (tinted, tinted);
             }
 
-            if(_closedFolderTexture == null) {
-                Debug.LogError("_closedFolderTexture is null.");
-                return;
-            }
-
-            _openFolderSelectedTexture = TextureHelper.GetWhiteTexture(_openFolderTexture, $"{_openedFolderPrefix} Icon White");
-            _closedFolderSelectedTexture = TextureHelper.GetWhiteTexture(_closedFolderTexture, $"{_closedFolderPrefix} Icon White");
-
-            _coloredFolderIcons = new (Texture2D, Texture2D)[] { (_openFolderTexture, _closedFolderTexture) };
-
-            for(int row = 0; row < IconRowCount; row++)
-            for(int column = 0; column < IconColumnCount; column++) {
-                int index = 1 + column + row * IconColumnCount;
-                Color color = IconColors[column, row];
-
-                Texture2D openFolderIcon = TextureHelper.GetTintedTexture(_openFolderSelectedTexture,
-                    color, $"{_openFolderSelectedTexture.name} {index}");
-
-                Texture2D closedFolderIcon = TextureHelper.GetTintedTexture(_closedFolderSelectedTexture,
-                    color, $"{_closedFolderSelectedTexture.name} {index}");
-
-                ArrayUtility.Add(ref _coloredFolderIcons, (openFolderIcon, closedFolderIcon));
-            }
-        }
-
-        private static void OnPlayModeStateChanged(PlayModeStateChange playModeState) {
-            if(playModeState == PlayModeStateChange.ExitingPlayMode) {
-                ResubscribeToEvents();
-            }
-        }
-
-        public static void ResubscribeToEvents() {
-#if !UNITY_6000_5_OR_NEWER
-            EditorApplication.hierarchyWindowItemOnGUI -= HandleDrawIcon;
-            EditorApplication.hierarchyWindowItemOnGUI += HandleDrawIcon;
-#endif
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void UpdateExpandedIDs() {
-            if(expandedIDsProperty == null) {
-                if(sceneHierarchyWindowType == null) {
-                    Assembly unityEditorAssembly = Assembly.GetAssembly(typeof(EditorWindow));
-                    sceneHierarchyWindowType = unityEditorAssembly.GetType("UnityEditor.SceneHierarchyWindow");
-                }
-
-                EditorWindow hierarchyWindow = HierarchyWindowUtility.GetHierarchyWindow();
-                if(hierarchyWindow == null) {
-                    Selection.selectionChanged -= OnSelectionChanged;
-                    Selection.selectionChanged += OnSelectionChanged;
-                    return;
-                }
-
-                PropertyInfo sceneHierarchyProperty = sceneHierarchyWindowType.GetProperty("sceneHierarchy", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if(sceneHierarchyProperty == null) {
-                    return;
-                }
-
-                object sceneHierarchy = sceneHierarchyProperty.GetValue(hierarchyWindow, null);
-
-                PropertyInfo treeViewStateProperty = sceneHierarchy.GetType().GetProperty("treeViewState", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if(treeViewStateProperty == null) {
-                    return;
-                }
-
-                treeViewState = treeViewStateProperty.GetValue(sceneHierarchy, null);
-
-                expandedIDsProperty = treeViewState.GetType().GetProperty("expandedIDs", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            }
-
-            if(expandedIDsProperty != null) {
-                expandedIDs = (List<EntityId>)expandedIDsProperty.GetValue(treeViewState, null);
-            }
-        }
-
-        private static void OnHierarchyChanged() {
-            UpdateExpandedIDs();
-        }
-
-        private static void OnSelectionChanged() {
-            Selection.selectionChanged -= OnSelectionChanged;
-            UpdateExpandedIDs();
-        }
-#if !UNITY_6000_5_OR_NEWER
-        private static void HandleDrawIcon(int instanceId, Rect itemRect) {
-            if(Event.current.type == EventType.Repaint && DisplaySettings.ShowFolderIcons) {
-                DrawIcon(instanceId, itemRect);
-            }
-        }
-#endif
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void DrawIcon(EntityId entityId, Rect itemRect) {
-            GameObject gameObject = EditorUtility.EntityIdToObject(entityId) as GameObject;
-            bool isFolder = Folder.TryGetIconIndex(gameObject, out int colorIndex);
-
-            if(gameObject != null && isFolder) {
-                Rect iconRect = itemRect;
-                iconRect.x = itemRect.x - 2;
-                iconRect.y = itemRect.y - 2;
-                iconRect.width = itemRect.height + 4;
-                iconRect.height = itemRect.height + 4;
-
-#if UNITY_2019_1
-                iconRect.x += 25f;
-#endif
-
-                bool expanded = expandedIDs.IndexOf(entityId) != -1;
-                (Texture2D open, Texture2D closed) icons = ColoredFolderIcons(Mathf.Clamp(colorIndex, 0, _coloredFolderIcons.Length - 1));
-                Texture2D icon = expanded ? icons.open : icons.closed;
-                GUI.DrawTexture(iconRect, icon);
-            }
+            _coloredFolderIcons = icons;
+            return true;
         }
     }
 }
-#endif

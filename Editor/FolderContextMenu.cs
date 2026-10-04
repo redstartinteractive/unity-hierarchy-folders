@@ -1,4 +1,3 @@
-#if UNITY_6000_5_OR_NEWER
 using System.Collections.Generic;
 using Unity.Hierarchy;
 using Unity.Hierarchy.Editor;
@@ -107,4 +106,3 @@ namespace UnityHierarchyFolders.Editor
         }
     }
 }
-#endif

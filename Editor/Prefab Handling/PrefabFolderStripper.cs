@@ -81,20 +81,7 @@
             // Serialization of ChangedPrefabs is not needed here because domain doesn't reload before changes are reverted.
         }
 
-        private static
-#if UNITY_2020_1_OR_NEWER
-            GUID
-#else
-            UnityEngine.Object
-#endif
-            GetAssetForLabel(string path)
-        {
-#if UNITY_2020_1_OR_NEWER
-            return AssetDatabase.GUIDFromAssetPath(path);
-#else
-            return AssetDatabase.LoadAssetAtPath<GameObject>(path);
-#endif
-        }
+        private static GUID GetAssetForLabel(string path) => AssetDatabase.GUIDFromAssetPath(path);
 
         private static void StripFoldersFromAllPrefabs()
         {

@@ -58,10 +58,8 @@
         {
             // Serialization is only needed if prefabs are edited before entering play mode and the domain will reload.
             // In all other cases, changes to prefabs will be reverted before a domain reload.
-#if UNITY_2019_3_OR_NEWER
             if (EditorSettings.enterPlayModeOptionsEnabled && EditorSettings.enterPlayModeOptions.HasFlag(EnterPlayModeOptions.DisableDomainReload))
                 return;
-#endif
 
             string serializedObject = EditorJsonUtility.ToJson(Instance);
             PlayerPrefs.SetString(KeyName, serializedObject);

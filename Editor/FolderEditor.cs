@@ -1,7 +1,9 @@
-﻿using UnityEditor;
-using UnityEngine;
-using UnityHierarchyFolders.Runtime;
 using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.UIElements;
+using UnityEngine;
+using UnityEngine.UIElements;
+using UnityHierarchyFolders.Runtime;
 
 namespace UnityHierarchyFolders.Editor
 {
@@ -9,84 +11,98 @@ namespace UnityHierarchyFolders.Editor
     [CanEditMultipleObjects]
     public class FolderEditor : UnityEditor.Editor
     {
-        public override void OnInspectorGUI()
+        private const string SelectedSwatchClass = "hf-color-swatch--selected";
+
+        public override VisualElement CreateInspectorGUI()
         {
-            this.RenderColorPicker();
-            this.RenderSelectChildrenButton();
+            var root = new VisualElement();
+            FolderStyles.Apply(root);
+
+            root.Add(CreateColorGrid(root));
+            root.Add(new Button(SelectChildObjects) { text = "Select Child Objects" });
+
+            return root;
         }
 
-        private void RenderColorPicker()
+        private VisualElement CreateColorGrid(VisualElement root)
         {
-            var colorIndexProperty = this.serializedObject.FindProperty("_colorIndex");
+            SerializedProperty colorIndex = serializedObject.FindProperty("_colorIndex");
+            var swatches = new List<(int index, Button button)>();
 
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            var grid = new VisualElement();
+            grid.AddToClassList("hf-color-grid");
 
-            float buttonSize = 28f;
-
-            var gridRect = EditorGUILayout.GetControlRect(false, buttonSize * HierarchyFolderIcon.IconRowCount,
-                GUILayout.Width(buttonSize * HierarchyFolderIcon.IconColumnCount));
-
-            int currentIndex = colorIndexProperty.intValue;
-            for(int row = 0; row < HierarchyFolderIcon.IconRowCount; row++)
+            for (int row = 0; row < HierarchyFolderIcon.IconRowCount; row++)
             {
-                for(int column = 0; column < HierarchyFolderIcon.IconColumnCount; column++)
+                var rowElement = new VisualElement();
+                rowElement.AddToClassList("hf-color-grid__row");
+                grid.Add(rowElement);
+
+                for (int column = 0; column < HierarchyFolderIcon.IconColumnCount; column++)
                 {
                     int index = 1 + column + row * HierarchyFolderIcon.IconColumnCount;
-                    float width = gridRect.width / HierarchyFolderIcon.IconColumnCount;
-                    float height = gridRect.height / HierarchyFolderIcon.IconRowCount;
-                    var rect = new Rect(gridRect.x + width * column, gridRect.y + height * row, width, height);
-                    (var openIcon, var closeIcon) = HierarchyFolderIcon.ColoredFolderIcons(index);
-
-                    if(Event.current.type == EventType.Repaint)
-                    {
-                        if(index == currentIndex)
-                        {
-                            GUIStyle hover = "TV Selection";
-                            hover.Draw(rect, false, false, false, false);
-                        } else if(rect.Contains(Event.current.mousePosition))
-                        {
-                            GUI.backgroundColor = new Color(.7f, .7f, .7f, 1f);
-                            GUIStyle white = "WhiteBackground";
-                            white.Draw(rect, false, false, true, false);
-                            GUI.backgroundColor = Color.white;
-                        }
-                    }
-
-                    if(GUI.Button(rect, currentIndex == index ? openIcon : closeIcon, EditorStyles.label))
-                    {
-                        Undo.RecordObject(this.target, "Set Folder Color");
-                        colorIndexProperty.intValue = currentIndex == index ? 0 : index;
-                        this.serializedObject.ApplyModifiedProperties();
-                        EditorApplication.RepaintHierarchyWindow();
-                        GUIUtility.ExitGUI();
-                    }
+                    Button swatch = CreateSwatch(index, () => ToggleColor(colorIndex, index));
+                    swatches.Add((index, swatch));
+                    rowElement.Add(swatch);
                 }
             }
 
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
-
-            GUILayout.Space(10f);
-        }
-
-        private void RenderSelectChildrenButton()
-        {
-            if (GUILayout.Button("Select Child Objects"))
+            void RefreshSelection(SerializedProperty property)
             {
-                List<GameObject> allObjects = new();
-
-                foreach (var target in targets)
+                int current = property.hasMultipleDifferentValues ? -1 : property.intValue;
+                foreach ((int index, Button button) in swatches)
                 {
-                    Folder script = (Folder)target;
-                    SelectChildrenRecursive(script.transform, allObjects);
+                    button.EnableInClassList(SelectedSwatchClass, index == current);
                 }
-
-                Selection.objects = allObjects.ToArray();
             }
+
+            // Also catches undo/redo and edits from other inspectors.
+            root.TrackPropertyValue(colorIndex, RefreshSelection);
+            RefreshSelection(colorIndex);
+
+            return grid;
         }
 
-        private void SelectChildrenRecursive(Transform parent, List<GameObject> allObjects)
+        private static Button CreateSwatch(int index, System.Action onClick)
+        {
+            var swatch = new Button(onClick);
+            swatch.AddToClassList("hf-color-swatch");
+
+            var icon = new Image { pickingMode = PickingMode.Ignore };
+            icon.AddToClassList("hf-color-swatch__icon");
+            Texture2D texture = HierarchyFolderIcon.ColoredFolderIcons(index).closed;
+            if (texture != null)
+                icon.image = texture;
+            else
+                icon.style.backgroundColor = HierarchyFolderIcon.FolderColor(index);
+
+            swatch.Add(icon);
+            return swatch;
+        }
+
+        /// <summary>Clicking the current color clears it; anything else sets it.</summary>
+        private void ToggleColor(SerializedProperty colorIndex, int index)
+        {
+            serializedObject.Update();
+            bool isCurrent = !colorIndex.hasMultipleDifferentValues && colorIndex.intValue == index;
+            colorIndex.intValue = isCurrent ? 0 : index;
+            serializedObject.ApplyModifiedProperties();
+            EditorApplication.RepaintHierarchyWindow();
+        }
+
+        private void SelectChildObjects()
+        {
+            List<GameObject> allObjects = new();
+
+            foreach (var target in targets)
+            {
+                SelectChildrenRecursive(((Folder) target).transform, allObjects);
+            }
+
+            Selection.objects = allObjects.ToArray();
+        }
+
+        private static void SelectChildrenRecursive(Transform parent, List<GameObject> allObjects)
         {
             for (int i = 0; i < parent.childCount; i++)
             {

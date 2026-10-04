@@ -1,35 +1,33 @@
-﻿namespace UnityHierarchyFolders.Editor
+namespace UnityHierarchyFolders.Editor
 {
-    using System;
     using System.Collections.Generic;
     using Runtime;
     using UnityEditor;
-    using UnityEngine;
+    using UnityEngine.UIElements;
 
     internal static class SettingsDrawer
     {
         private const string ProviderPath = "Hierarchy Folders";
+        private const string AlignedFieldClass = "unity-base-field__aligned";
 
-        private static readonly GUIContent _playModeLabel = new GUIContent("Play Mode Stripping Type");
-        private static readonly GUIContent _buildLabel = new GUIContent("Build Stripping Type");
-        private static readonly GUIContent _capitalizeLabel = new GUIContent("Capitalize Folder Names");
-        private static readonly GUIContent _prefabsInPlayModeLabel = new GUIContent("Strip folders from prefabs in Play Mode");
-        private static readonly GUIContent _prefabsInBuildLabel = new GUIContent("Strip folders from prefabs in build");
+        private const string PlayModeLabel = "Play Mode Stripping Type";
+        private const string BuildLabel = "Build Stripping Type";
+        private const string CapitalizeLabel = "Capitalize Folder Names";
+        private const string PrefabsInPlayModeLabel = "Strip folders from prefabs in Play Mode";
+        private const string PrefabsInBuildLabel = "Strip folders from prefabs in build";
 
-        private static readonly GUIContent _folderIconsLabel = new GUIContent("Show Folder Icons",
-            "Replace the GameObject icon of folders with a folder icon tinted with the folder's color.");
-        private static readonly GUIContent _rowBackgroundsLabel = new GUIContent("Show Colored Row Backgrounds",
-            "Tint the Hierarchy row of folders that have a color set.");
-        private static readonly GUIContent _rowOpacityLabel = new GUIContent("Row Background Opacity");
+        private const string FolderIconsLabel = "Show Folder Icons";
+        private const string RowBackgroundsLabel = "Show Colored Row Backgrounds";
+        private const string RowOpacityLabel = "Row Background Opacity";
 
         [SettingsProvider]
         public static SettingsProvider CreateProjectSettingsProvider()
         {
             return new SettingsProvider("Project/" + ProviderPath, SettingsScope.Project)
             {
-                guiHandler = OnProjectGUI,
-                keywords = GetKeywords(_playModeLabel, _buildLabel, _capitalizeLabel, _prefabsInPlayModeLabel,
-                    _prefabsInBuildLabel)
+                activateHandler = (_, root) => BuildProjectSettings(root),
+                keywords = GetKeywords(PlayModeLabel, BuildLabel, CapitalizeLabel, PrefabsInPlayModeLabel,
+                    PrefabsInBuildLabel)
             };
         }
 
@@ -38,122 +36,145 @@
         {
             return new SettingsProvider("Preferences/" + ProviderPath, SettingsScope.User)
             {
-                guiHandler = OnPreferencesGUI,
-                keywords = GetKeywords(_folderIconsLabel, _rowBackgroundsLabel, _rowOpacityLabel)
+                activateHandler = (_, root) => BuildPreferences(root),
+                keywords = GetKeywords(FolderIconsLabel, RowBackgroundsLabel, RowOpacityLabel)
             };
         }
 
-        private static void OnProjectGUI(string searchContext)
+        private static void BuildProjectSettings(VisualElement root)
         {
-            using (new TemporaryLabelWidth(230f))
+            VisualElement panel = CreatePanel(root);
+
+            var playMode = Aligned(new EnumField(PlayModeLabel, StripSettings.PlayMode));
+            var capitalize = Aligned(new Toggle(CapitalizeLabel) { value = StripSettings.CapitalizeName });
+
+            // Builds can only delete folders, so this is shown for clarity but not editable.
+            var build = Aligned(new EnumField(BuildLabel, StripSettings.Build)
             {
-                EditorGUI.BeginChangeCheck();
-                var playMode = (StrippingMode) EditorGUILayout.EnumPopup(_playModeLabel, StripSettings.PlayMode);
-                if (EditorGUI.EndChangeCheck())
-                    StripSettings.PlayMode = playMode;
+                tooltip = "Folders are always deleted from builds."
+            });
+            build.SetEnabled(false);
 
-                if (StripSettings.PlayMode == StrippingMode.ReplaceWithSeparator)
-                {
-                    EditorGUI.BeginChangeCheck();
-                    bool capitalize = EditorGUILayout.Toggle(_capitalizeLabel, StripSettings.CapitalizeName);
-                    if (EditorGUI.EndChangeCheck())
-                        StripSettings.CapitalizeName = capitalize;
-                }
+            var prefabsHelp = new HelpBox(
+                "If you notice that entering play mode takes too long, you can try disabling this option. " +
+                "Folders will not be stripped from prefabs that are instantiated at runtime, but if performance in " +
+                "Play Mode does not matter, you will be fine.", HelpBoxMessageType.Info);
+            var prefabsInPlayMode = Aligned(new Toggle(PrefabsInPlayModeLabel)
+            {
+                value = StripSettings.StripFoldersFromPrefabsInPlayMode
+            });
+            var prefabsInBuild = Aligned(new Toggle(PrefabsInBuildLabel)
+            {
+                value = StripSettings.StripFoldersFromPrefabsInBuild
+            });
 
-                EditorGUI.BeginChangeCheck();
-                var build = (StrippingMode) EditorGUILayout.EnumPopup(
-                    _buildLabel, StripSettings.Build, TypeCanBeInBuild, true);
-                if (EditorGUI.EndChangeCheck())
-                    StripSettings.Build = build;
-
-                EditorGUILayout.Space(EditorGUIUtility.singleLineHeight);
-
-                if (StripSettings.StripFoldersFromPrefabsInPlayMode)
-                {
-                    EditorGUILayout.HelpBox(
-                        "If you notice that entering play mode takes too long, you can try disabling this option. " +
-                        "Folders will not be stripped from prefabs that are instantiated at runtime, but if performance in " +
-                        "Play Mode does not matter, you will be fine.", MessageType.Info);
-                }
-
-                EditorGUI.BeginChangeCheck();
-                bool prefabsInPlayMode = EditorGUILayout.Toggle(_prefabsInPlayModeLabel,
-                    StripSettings.StripFoldersFromPrefabsInPlayMode);
-                if (EditorGUI.EndChangeCheck())
-                    StripSettings.StripFoldersFromPrefabsInPlayMode = prefabsInPlayMode;
-
-                EditorGUI.BeginChangeCheck();
-                bool prefabsInBuild = EditorGUILayout.Toggle(_prefabsInBuildLabel,
-                    StripSettings.StripFoldersFromPrefabsInBuild);
-                if (EditorGUI.EndChangeCheck())
-                    StripSettings.StripFoldersFromPrefabsInBuild = prefabsInBuild;
+            void UpdateVisibility()
+            {
+                SetVisible(capitalize, StripSettings.PlayMode == StrippingMode.ReplaceWithSeparator);
+                SetVisible(prefabsHelp, StripSettings.StripFoldersFromPrefabsInPlayMode);
             }
+
+            playMode.RegisterValueChangedCallback(evt =>
+            {
+                StripSettings.PlayMode = (StrippingMode) evt.newValue;
+                UpdateVisibility();
+            });
+            capitalize.RegisterValueChangedCallback(evt => StripSettings.CapitalizeName = evt.newValue);
+            prefabsInPlayMode.RegisterValueChangedCallback(evt =>
+            {
+                StripSettings.StripFoldersFromPrefabsInPlayMode = evt.newValue;
+                UpdateVisibility();
+            });
+            prefabsInBuild.RegisterValueChangedCallback(evt => StripSettings.StripFoldersFromPrefabsInBuild = evt.newValue);
+
+            panel.Add(playMode);
+            panel.Add(capitalize);
+            panel.Add(build);
+            panel.Add(Spacer());
+            panel.Add(prefabsHelp);
+            panel.Add(prefabsInPlayMode);
+            panel.Add(prefabsInBuild);
+            UpdateVisibility();
         }
 
-        private static void OnPreferencesGUI(string searchContext)
+        private static void BuildPreferences(VisualElement root)
         {
-            using (new TemporaryLabelWidth(230f))
+            VisualElement panel = CreatePanel(root);
+
+            var showIcons = Aligned(new Toggle(FolderIconsLabel)
             {
-                EditorGUI.BeginChangeCheck();
-                bool showIcons = EditorGUILayout.Toggle(_folderIconsLabel, DisplaySettings.ShowFolderIcons);
-                if (EditorGUI.EndChangeCheck())
-                    DisplaySettings.ShowFolderIcons = showIcons;
+                value = DisplaySettings.ShowFolderIcons,
+                tooltip = "Replace the GameObject icon of folders with a folder icon tinted with the folder's color."
+            });
+            var showBackgrounds = Aligned(new Toggle(RowBackgroundsLabel)
+            {
+                value = DisplaySettings.ShowRowBackgrounds,
+                tooltip = "Tint the Hierarchy row of folders that have a color set."
+            });
+            var opacity = Aligned(new Slider(RowOpacityLabel, 0f, 1f)
+            {
+                value = DisplaySettings.RowBackgroundOpacity,
+                showInputField = true
+            });
+            opacity.SetEnabled(DisplaySettings.ShowRowBackgrounds);
 
-#if UNITY_6000_5_OR_NEWER
-                EditorGUI.BeginChangeCheck();
-                bool showBackgrounds = EditorGUILayout.Toggle(_rowBackgroundsLabel, DisplaySettings.ShowRowBackgrounds);
-                if (EditorGUI.EndChangeCheck())
-                    DisplaySettings.ShowRowBackgrounds = showBackgrounds;
+            showIcons.RegisterValueChangedCallback(evt => DisplaySettings.ShowFolderIcons = evt.newValue);
+            showBackgrounds.RegisterValueChangedCallback(evt =>
+            {
+                DisplaySettings.ShowRowBackgrounds = evt.newValue;
+                opacity.SetEnabled(evt.newValue);
+            });
+            opacity.RegisterValueChangedCallback(evt => DisplaySettings.RowBackgroundOpacity = evt.newValue);
 
-                using (new EditorGUI.DisabledScope(!DisplaySettings.ShowRowBackgrounds))
-                {
-                    EditorGUI.BeginChangeCheck();
-                    float opacity = EditorGUILayout.Slider(_rowOpacityLabel, DisplaySettings.RowBackgroundOpacity, 0f, 1f);
-                    if (EditorGUI.EndChangeCheck())
-                        DisplaySettings.RowBackgroundOpacity = opacity;
-                }
-#endif
-            }
+            panel.Add(showIcons);
+            panel.Add(showBackgrounds);
+            panel.Add(opacity);
         }
 
-        private static HashSet<string> GetKeywords(params GUIContent[] labels)
+        private static VisualElement CreatePanel(VisualElement root)
+        {
+            FolderStyles.Apply(root);
+
+            var panel = new VisualElement();
+            panel.AddToClassList("hf-settings");
+
+            var title = new Label(ProviderPath);
+            title.AddToClassList("hf-settings__title");
+            panel.Add(title);
+
+            root.Add(panel);
+            return panel;
+        }
+
+        private static T Aligned<T>(T field) where T : VisualElement
+        {
+            field.AddToClassList(AlignedFieldClass);
+            return field;
+        }
+
+        private static VisualElement Spacer()
+        {
+            var spacer = new VisualElement();
+            spacer.AddToClassList("hf-settings__spacer");
+            return spacer;
+        }
+
+        private static void SetVisible(VisualElement element, bool visible) =>
+            element.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+
+        private static HashSet<string> GetKeywords(params string[] labels)
         {
             var keywords = new HashSet<string>();
 
-            foreach (GUIContent label in labels)
+            foreach (string label in labels)
             {
-                foreach (string word in label.text.Split(' '))
+                foreach (string word in label.Split(' '))
                 {
                     keywords.Add(word);
                 }
             }
 
             return keywords;
-        }
-
-        private static bool TypeCanBeInBuild(Enum enumValue)
-        {
-            var mode = (StrippingMode) enumValue;
-            return mode == StrippingMode.Delete;
-        }
-
-        /// <summary>
-        /// Temporarily sets <see cref="EditorGUIUtility.labelWidth"/> to a certain value, than reverts it.
-        /// </summary>
-        private readonly struct TemporaryLabelWidth : IDisposable
-        {
-            private readonly float _oldWidth;
-
-            public TemporaryLabelWidth(float width)
-            {
-                _oldWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = width;
-            }
-
-            public void Dispose()
-            {
-                EditorGUIUtility.labelWidth = _oldWidth;
-            }
         }
     }
 }

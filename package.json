@@ -1,8 +1,8 @@
 {
   "name": "io.redstart.hierarchy-folders",
   "displayName": "Hierarchy Folders",
-  "version": "0.6.0",
-  "unity": "6000.3",
+  "version": "0.7.0",
+  "unity": "6000.5",
   "description": "Self-deleting Folder objects for the hierarchy.",
   "keywords": [
     "folder",

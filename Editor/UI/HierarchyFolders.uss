@@ -1,0 +1,95 @@
+/* Settings panes (Project Settings / Preferences) */
+.hf-settings {
+    padding: 1px 10px 10px 10px;
+}
+
+.hf-settings__title {
+    font-size: 19px;
+    -unity-font-style: bold;
+    margin: 2px 0 10px 0;
+}
+
+.hf-settings__spacer {
+    height: 12px;
+}
+
+/* Folder inspector color grid */
+.hf-color-grid {
+    align-self: center;
+    margin: 4px 0 10px 0;
+}
+
+.hf-color-grid__row {
+    flex-direction: row;
+}
+
+.hf-color-swatch {
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 2px;
+    border-width: 0;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.hf-color-swatch:hover {
+    background-color: var(--unity-colors-button-background-hover);
+}
+
+.hf-color-swatch--selected {
+    background-color: var(--unity-colors-highlight-background);
+}
+
+.hf-color-swatch__icon {
+    flex-grow: 1;
+}
+
+/* Send To Folder window */
+.hf-send-window__columns {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.hf-send-window__column {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 4px;
+}
+
+.hf-send-window__header {
+    -unity-font-style: bold;
+    margin: 2px 0 4px 2px;
+}
+
+.hf-send-window__list {
+    flex-grow: 1;
+    border-width: 1px;
+    border-color: var(--unity-colors-default-border);
+}
+
+.hf-send-window__send {
+    height: 28px;
+    margin: 4px;
+}
+
+.hf-row {
+    flex-direction: row;
+    align-items: center;
+    padding-left: 4px;
+}
+
+.hf-row__icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+
+.hf-row__path {
+    opacity: 0.6;
+    margin-left: 6px;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

@@ -4,6 +4,14 @@ Specialized folder objects for Unity Hierarchy.
 
 ## Installation
 
+Requires Unity 6000.5 or newer (the UI Toolkit Hierarchy window). For older
+editors, use the `v0.6.0` tag, the last version that supports 6000.3 and the
+legacy IMGUI Hierarchy:
+
+```json
+"io.redstart.hierarchy-folders": "https://github.com/redstartinteractive/unity-hierarchy-folders.git#v0.6.0"
+```
+
 This uses the new UPM system. The old copy-into-Assets method still works
 perfectly decent so if you don't want to bother with UPM just copy the `Editor`
 and `Runtime` folders into your project.
@@ -67,7 +75,7 @@ With this plugin, it is possible to strip folders from prefabs that are not pres
 How folders look in the Hierarchy window is a per-user preference, under **Preferences -> Hierarchy Folders**:
 
 - **Show Folder Icons** - Replace the folder GameObject's icon with a folder icon tinted with its color.
-- **Show Colored Row Backgrounds** *(new Hierarchy window, Unity 6.5+)* - Tint the whole row of folders that have a color set. Folders without a color are never tinted.
+- **Show Colored Row Backgrounds** - Tint the whole row of folders that have a color set. Folders without a color are never tinted.
 - **Row Background Opacity** - How strongly the row is tinted.
 
 ## Possible FAQs
