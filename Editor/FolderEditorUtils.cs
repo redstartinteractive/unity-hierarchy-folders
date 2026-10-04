@@ -78,25 +78,18 @@ namespace UnityHierarchyFolders.Editor
         }
 
         // Editable top-level scene objects only, so a child isn't pulled out of a selected parent.
-        private static Transform[] SelectedSceneTransforms() =>
+        internal static Transform[] SelectedSceneTransforms() =>
             Selection.GetTransforms(SelectionMode.TopLevel | SelectionMode.Editable | SelectionMode.ExcludePrefab);
 
         // A GameObject/ menu item runs once per selected object; only act on the first.
         private static bool IsRepeatedForMultiSelection(MenuCommand command) =>
             Selection.objects.Length > 1 && command.context && command.context != Selection.objects[0];
 
-        /// <summary>Add new folder "prefab".</summary>
-        /// <param name="command">Menu command information.</param>
         [MenuItem("GameObject/" + SendToFolderMenuName, isValidateFunction: false, priority: 0)]
         public static void SendToFolder(MenuCommand command)
         {
-            if(Selection.objects.Length > 1) 
-            {
-                if(command.context != Selection.objects[0]) 
-                {
-                    return;
-                }
-            }
+            if (IsRepeatedForMultiSelection(command))
+                return;
 
             SelectHierarchyFolderEditor.ShowWindow();
         }
@@ -104,10 +97,8 @@ namespace UnityHierarchyFolders.Editor
         [MenuItem("GameObject/" + SendToFolderMenuName, isValidateFunction: true, priority: 0)]
         public static bool SendToFolderValidate(MenuCommand command) => CanSendToFolder();
 
-        internal static bool CanSendToFolder()
-        {
-            return Selection.objects.Length > 0 && Object.FindObjectsByType<Folder>(FindObjectsInactive.Include).Length > 0;
-        }
+        internal static bool CanSendToFolder() =>
+            HasSceneSelection() && Object.FindAnyObjectByType<Folder>(FindObjectsInactive.Include) != null;
     }
 
     public class FolderOnBuild : IProcessSceneWithReport 

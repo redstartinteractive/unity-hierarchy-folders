@@ -8,7 +8,7 @@ namespace UnityHierarchyFolders.Editor
     internal static class SettingsDrawer
     {
         private const string ProviderPath = "Hierarchy Folders";
-        private const string AlignedFieldClass = "unity-base-field__aligned";
+        private static readonly string AlignedFieldClass = BaseField<bool>.alignedFieldUssClassName;
 
         private const string PlayModeLabel = "Play Mode Stripping Type";
         private const string BuildLabel = "Build Stripping Type";

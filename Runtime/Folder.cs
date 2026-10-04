@@ -62,20 +62,16 @@ namespace UnityHierarchyFolders.Runtime
         public int ColorIndex => this._colorIndex;
 
         /// <summary>
-        /// The set of folder objects.
-        /// </summary>
-        public static Dictionary<EntityId, int> folders = new Dictionary<EntityId, int>();
-
-        /// <summary>
-        /// Gets the icon index associated with the specified object.
+        /// Gets the color index of a folder GameObject (or Folder component).
         /// </summary>
         /// <param name="obj">Test object.</param>
-        /// <param name="index">The icon index.</param>
-        /// <returns>True if the specified object is a folder with a registered icon index.</returns>
+        /// <param name="index">The color index, or -1 if the object isn't a folder.</param>
+        /// <returns>True if the specified object is a folder.</returns>
         public static bool TryGetIconIndex(UnityEngine.Object obj, out int index)
         {
-            index = -1;
-            return obj && folders.TryGetValue(obj.GetEntityId(), out index);
+            Folder folder = AsFolder(obj);
+            index = folder ? folder._colorIndex : -1;
+            return folder;
         }
 
         /// <summary>
@@ -83,14 +79,15 @@ namespace UnityHierarchyFolders.Runtime
         /// </summary>
         /// <param name="obj">Test object.</param>
         /// <returns>Is this object a folder?</returns>
-        public static bool IsFolder(UnityEngine.Object obj) => folders.ContainsKey(obj.GetEntityId());
+        public static bool IsFolder(UnityEngine.Object obj) => AsFolder(obj);
 
-        private void Start() => this.AddFolderData();
-        private void OnValidate() => this.AddFolderData();
-        private void OnDestroy() => this.RemoveFolderData();
+        private static Folder AsFolder(UnityEngine.Object obj) =>
+            obj is GameObject go && go.TryGetComponent(out Folder folder) ? folder : obj as Folder;
 
-        private void AddFolderData() => folders[this.gameObject.GetEntityId()] = this._colorIndex;
-        private void RemoveFolderData() => folders.Remove(this.gameObject.GetEntityId());
+        /// <summary>Raised when a folder's serialized color may have changed: inspector edits, undo/redo, loads.</summary>
+        public static event Action<Folder> ColorChanged;
+
+        private void OnValidate() => ColorChanged?.Invoke(this);
 
         /// <summary>Hides all gizmos if selected to avoid accidental editing of the transform.</summary>
         private void HandleSelection()
@@ -170,11 +167,6 @@ namespace UnityHierarchyFolders.Runtime
             this.transform.position = Vector3.zero;
             this.transform.rotation = Quaternion.identity;
             this.transform.localScale = new Vector3(1, 1, 1);
-
-            if (!Application.IsPlaying(this.gameObject))
-            {
-                this.AddFolderData();
-            }
 
             this.EnsureExclusiveComponent();
         }

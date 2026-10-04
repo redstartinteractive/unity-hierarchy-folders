@@ -15,11 +15,11 @@ namespace UnityHierarchyFolders.Editor
     internal static class FolderContextMenu
     {
         // Static GameObject/ menu items that Unity copies into this menu; replaced by the section below.
-        private static readonly string[] _staticMenuLabels =
+        private static readonly string[] _staticMenuNames =
         {
             FolderEditorUtils.NewFolderLabel,
             FolderEditorUtils.NewFolderWithSelectionLabel,
-            FolderEditorUtils.SendToFolderLabel,
+            FolderEditorUtils.SendToFolderMenuName,
         };
 
         private const string _createEmptyLabel = "Create Empty";
@@ -69,7 +69,7 @@ namespace UnityHierarchyFolders.Editor
 
             for (int i = items.Count - 1; i >= 0; i--)
             {
-                if (items[i] is DropdownMenuAction action && IsStaticFolderItem(action.name))
+                if (items[i] is DropdownMenuAction action && System.Array.IndexOf(_staticMenuNames, action.name) >= 0)
                 {
                     menu.RemoveItemAt(i);
                     firstIndex = i;
@@ -77,12 +77,6 @@ namespace UnityHierarchyFolders.Editor
             }
 
             return firstIndex;
-        }
-
-        private static bool IsStaticFolderItem(string menuName)
-        {
-            string label = LabelWithoutHotkey(menuName);
-            return System.Array.IndexOf(_staticMenuLabels, label) >= 0;
         }
 
         private static int IndexOf(DropdownMenu menu, string label)
@@ -97,7 +91,7 @@ namespace UnityHierarchyFolders.Editor
             return -1;
         }
 
-        // Menu names carry Unity's hotkey suffix, e.g. "Send To Folder %#&M".
+        // Unity's menu names carry a hotkey suffix, e.g. "Create Empty %#n".
         private static string LabelWithoutHotkey(string menuName)
         {
             int space = menuName.LastIndexOf(' ');

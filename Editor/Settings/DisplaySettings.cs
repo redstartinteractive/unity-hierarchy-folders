@@ -10,9 +10,9 @@ namespace UnityHierarchyFolders.Editor
     /// </summary>
     internal static class DisplaySettings
     {
-        private static UserSetting<bool> _showFolderIcons;
-        private static UserSetting<bool> _showRowBackgrounds;
-        private static UserSetting<float> _rowBackgroundOpacity;
+        private static readonly UserSetting<bool> _showFolderIcons = Create("display.showFolderIcons", true);
+        private static readonly UserSetting<bool> _showRowBackgrounds = Create("display.showRowBackgrounds", true);
+        private static readonly UserSetting<float> _rowBackgroundOpacity = Create("display.rowBackgroundOpacity", 0.5f);
 
         /// <summary>Raised after any display preference changes, so the Hierarchy can be redrawn.</summary>
         public static event Action Changed;
@@ -20,46 +20,30 @@ namespace UnityHierarchyFolders.Editor
         /// <summary>Replace the GameObject icon of folders with a (colored) folder icon.</summary>
         public static bool ShowFolderIcons
         {
-            get => Get(ref _showFolderIcons).value;
-            set => Set(ref _showFolderIcons, value);
+            get => _showFolderIcons.value;
+            set => Set(_showFolderIcons, value);
         }
 
-        /// <summary>Tint the whole Hierarchy row of a colored folder (new Hierarchy window only).</summary>
+        /// <summary>Tint the whole Hierarchy row of a colored folder.</summary>
         public static bool ShowRowBackgrounds
         {
-            get => Get(ref _showRowBackgrounds).value;
-            set => Set(ref _showRowBackgrounds, value);
+            get => _showRowBackgrounds.value;
+            set => Set(_showRowBackgrounds, value);
         }
 
         public static float RowBackgroundOpacity
         {
-            get => Get(ref _rowBackgroundOpacity).value;
-            set => Set(ref _rowBackgroundOpacity, value);
+            get => _rowBackgroundOpacity.value;
+            set => Set(_rowBackgroundOpacity, value);
         }
 
-        private static UserSetting<T> Get<T>(ref UserSetting<T> setting)
+        private static void Set<T>(UserSetting<T> setting, T value)
         {
-            InitializeIfNeeded();
-            return setting;
-        }
-
-        private static void Set<T>(ref UserSetting<T> setting, T value)
-        {
-            InitializeIfNeeded();
             setting.value = value;
             Changed?.Invoke();
         }
 
-        private static void InitializeIfNeeded()
-        {
-            if (_showFolderIcons != null)
-                return;
-
-            Settings settings = PackageSettings.Instance;
-            _showFolderIcons = new UserSetting<bool>(settings, "display.showFolderIcons", true, SettingsScope.User);
-            _showRowBackgrounds = new UserSetting<bool>(settings, "display.showRowBackgrounds", true, SettingsScope.User);
-            _rowBackgroundOpacity =
-                new UserSetting<float>(settings, "display.rowBackgroundOpacity", 0.5f, SettingsScope.User);
-        }
+        private static UserSetting<T> Create<T>(string key, T defaultValue) =>
+            new UserSetting<T>(PackageSettings.Instance, key, defaultValue, SettingsScope.User);
     }
 }

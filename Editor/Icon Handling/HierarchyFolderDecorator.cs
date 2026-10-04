@@ -10,21 +10,26 @@ namespace UnityHierarchyFolders.Editor {
     [InitializeOnLoad]
     public static class HierarchyFolderDecorator
     {
-        // Items currently styled as folders, so they can be restyled without waiting for a rebind.
-        private static readonly Dictionary<HierarchyViewItem, HierarchyView> _decoratedItems = new();
+        // Rows currently styled as folders, so they can be restyled without waiting for the Hierarchy to rebind them.
+        private static readonly Dictionary<HierarchyViewItem, GameObject> _decoratedItems = new();
+        private static readonly List<HierarchyViewItem> _detachedItems = new();
 
         static HierarchyFolderDecorator()
         {
             HierarchyWindow.BindViewItem   += OnBindViewItem;
             HierarchyWindow.UnbindViewItem += OnUnbindViewItem;
             DisplaySettings.Changed        += RedecorateAll;
-            ObjectChangeEvents.changesPublished += OnChangesPublished;
+            Folder.ColorChanged            += OnFolderColorChanged;
         }
 
         private static void OnBindViewItem(HierarchyWindow window, HierarchyView view, HierarchyViewItem item)
         {
-            if (Decorate(view, item))
-                _decoratedItems[item] = view;
+            if (item.Handler is not HierarchyGameObjectHandler handler)
+                return;
+
+            GameObject go = handler.GetGameObject(item.Node);
+            if (Decorate(item, go))
+                _decoratedItems[item] = go;
         }
 
         private static void OnUnbindViewItem(HierarchyWindow window, HierarchyView view, HierarchyViewItem item)
@@ -33,52 +38,40 @@ namespace UnityHierarchyFolders.Editor {
                 ClearStyle(item);
         }
 
-        // The Hierarchy doesn't rebind a row when a property changes, so a new folder color (from the inspector,
-        // undo/redo or a script) wouldn't show until the row was rebound some other way.
-        private static void OnChangesPublished(ref ObjectChangeEventStream stream)
+        // The Hierarchy doesn't rebind a row when a property changes, so restyle the folder's rows directly.
+        private static void OnFolderColorChanged(Folder folder)
         {
-            for (int i = 0; i < stream.length; i++)
+            foreach ((HierarchyViewItem item, GameObject go) in _decoratedItems)
             {
-                if (stream.GetEventType(i) != ObjectChangeKind.ChangeGameObjectOrComponentProperties)
-                    continue;
-
-                stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var args);
-                Object changed = EditorUtility.EntityIdToObject(args.entityId);
-                if (changed is Folder || (changed is GameObject go && go.TryGetComponent<Folder>(out _)))
-                {
-                    RedecorateAll();
-                    return;
-                }
+                if (go == folder.gameObject)
+                    Decorate(item, go);
             }
         }
 
         private static void RedecorateAll()
         {
-            foreach ((HierarchyViewItem item, HierarchyView view) in _decoratedItems)
+            foreach ((HierarchyViewItem item, GameObject go) in _decoratedItems)
             {
-                ClearStyle(item);
-                Decorate(view, item);
+                if (item.panel == null)
+                    _detachedItems.Add(item);
+                else
+                    Decorate(item, go);
             }
+
+            // Rows of a closed Hierarchy window may never get an unbind; don't keep them alive.
+            foreach (HierarchyViewItem item in _detachedItems)
+                _decoratedItems.Remove(item);
+            _detachedItems.Clear();
         }
 
-        private static bool Decorate(HierarchyView view, HierarchyViewItem item)
+        /// <summary>Sets the folder styling for the row's current state; false if the GameObject isn't a folder.</summary>
+        private static bool Decorate(HierarchyViewItem item, GameObject go)
         {
-            if (item.Handler is not HierarchyGameObjectHandler handler)
-                return false;
-
-            GameObject go = handler.GetGameObject(item.Node);
-
             if (go == null || !Folder.TryGetIconIndex(go, out int colorIndex))
                 return false;
 
-            if (DisplaySettings.ShowFolderIcons)
-            {
-                bool isExpanded = view.ViewModel.HasFlags(item.Node, HierarchyNodeFlags.Expanded);
-                (Texture2D open, Texture2D closed) = HierarchyFolderIcon.ColoredFolderIcons(colorIndex);
-                Texture2D icon = isExpanded ? open : closed;
-                if (icon != null)
-                    item.Icon.style.backgroundImage = new StyleBackground(icon);
-            }
+            Texture2D icon = DisplaySettings.ShowFolderIcons ? HierarchyFolderIcon.ColoredFolderIcon(colorIndex) : null;
+            item.Icon.style.backgroundImage = icon != null ? new StyleBackground(icon) : StyleKeyword.Null;
 
             // Color index 0 means "no color": leave the row's own background alone.
             if (DisplaySettings.ShowRowBackgrounds && colorIndex > 0)
@@ -86,6 +79,10 @@ namespace UnityHierarchyFolders.Editor {
                 Color bgColor = HierarchyFolderIcon.FolderColor(colorIndex);
                 bgColor.a = DisplaySettings.RowBackgroundOpacity;
                 item.style.backgroundColor = new StyleColor(bgColor);
+            }
+            else
+            {
+                item.style.backgroundColor = StyleKeyword.Null;
             }
 
             return true;

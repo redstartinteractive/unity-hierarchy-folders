@@ -70,7 +70,7 @@ namespace UnityHierarchyFolders.Editor
 
             var icon = new Image { pickingMode = PickingMode.Ignore };
             icon.AddToClassList("hf-color-swatch__icon");
-            Texture2D texture = HierarchyFolderIcon.ColoredFolderIcons(index).closed;
+            Texture2D texture = HierarchyFolderIcon.ColoredFolderIcon(index);
             if (texture != null)
                 icon.image = texture;
             else
@@ -87,7 +87,6 @@ namespace UnityHierarchyFolders.Editor
             bool isCurrent = !colorIndex.hasMultipleDifferentValues && colorIndex.intValue == index;
             colorIndex.intValue = isCurrent ? 0 : index;
             serializedObject.ApplyModifiedProperties();
-            EditorApplication.RepaintHierarchyWindow();
         }
 
         private void SelectChildObjects()

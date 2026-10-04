@@ -7,7 +7,9 @@ namespace UnityHierarchyFolders.Editor {
         private const string _folderIconName = "Folder Icon";
 
         // Index 0 is the untinted "no color" icon; index i > 0 is IconColors entry i - 1.
-        private static (Texture2D open, Texture2D closed)[] _coloredFolderIcons;
+        private static Texture2D[] _coloredFolderIcons;
+        private static bool _initBlocked;
+        private static bool _initFailedOnce;
 
         private static readonly Color[,] IconColors = {
             { new(0.09f, 0.57f, 0.82f), new(0.05f, 0.34f, 0.48f) },
@@ -25,11 +27,11 @@ namespace UnityHierarchyFolders.Editor {
         public static int IconRowCount => IconColors.GetLength(1);
         public static int ColorCount => IconColumnCount * IconRowCount;
 
-        /// <summary>Icons for a color index, or default if it's out of range or the icons can't be built yet.</summary>
-        public static (Texture2D open, Texture2D closed) ColoredFolderIcons(int i)
+        /// <summary>Icon for a color index, or null if it's out of range or the icons can't be built.</summary>
+        public static Texture2D ColoredFolderIcon(int i)
         {
             if (!TryInitIcons() || i < 0 || i >= _coloredFolderIcons.Length)
-                return default;
+                return null;
             return _coloredFolderIcons[i];
         }
 
@@ -50,31 +52,41 @@ namespace UnityHierarchyFolders.Editor {
         private static bool TryInitIcons() {
             if (_coloredFolderIcons != null)
                 return true;
+            if (_initBlocked)
+                return false;
 
             var folderTexture = EditorGUIUtility.FindTexture(_folderIconName);
-            if (folderTexture == null) {
-                Debug.LogError($"[HierarchyFolders] Built-in icon \"{_folderIconName}\" not found.");
-                return false;
-            }
+            if (folderTexture == null)
+                return InitFailed($"Built-in icon \"{_folderIconName}\" not found.");
 
             Texture2D whiteTexture;
             try {
                 whiteTexture = TextureHelper.GetWhiteTexture(folderTexture, $"{_folderIconName} White");
             } catch (System.Exception e) {
-                Debug.LogException(e);
-                return false;
+                return InitFailed(e.Message);
             }
 
-            var icons = new (Texture2D, Texture2D)[1 + ColorCount];
-            icons[0] = (folderTexture, folderTexture);
+            var icons = new Texture2D[1 + ColorCount];
+            icons[0] = folderTexture;
 
-            for (int index = 1; index < icons.Length; index++) {
-                Texture2D tinted = TextureHelper.GetTintedTexture(whiteTexture, FolderColor(index), $"{whiteTexture.name} {index}");
-                icons[index] = (tinted, tinted);
-            }
+            for (int index = 1; index < icons.Length; index++)
+                icons[index] = TextureHelper.GetTintedTexture(whiteTexture, FolderColor(index), $"{whiteTexture.name} {index}");
 
             _coloredFolderIcons = icons;
             return true;
+        }
+
+        // The first failure is often a shader not loaded yet after a domain reload: retry once on the next editor
+        // tick, then give up (and log) rather than retrying on every Hierarchy row bind.
+        private static bool InitFailed(string reason) {
+            _initBlocked = true;
+            if (!_initFailedOnce) {
+                _initFailedOnce = true;
+                EditorApplication.delayCall += () => _initBlocked = false;
+            } else {
+                Debug.LogError($"[HierarchyFolders] Couldn't build folder icons: {reason}");
+            }
+            return false;
         }
     }
 }

@@ -12,9 +12,10 @@ namespace UnityHierarchyFolders.Editor {
     public class SelectHierarchyFolderEditor : EditorWindow {
         private const float K_MIN_WIDTH = 320f;
         private const float K_MIN_HEIGHT = 200f;
-        private const string UndoName = "Send To Folder";
-
         private readonly List<GameObject> objectsToMove = new();
+        // Every folder in the open scenes, sorted by path; rescanned only when the hierarchy changes.
+        private readonly List<(Folder folder, string path)> allFolders = new();
+        // allFolders filtered by the search text and the current selection.
         private readonly List<(Folder folder, string path)> folders = new();
 
         private ToolbarSearchField searchField;
@@ -23,19 +24,24 @@ namespace UnityHierarchyFolders.Editor {
         private Button sendButton;
 
         public static void ShowWindow() {
-            var window = GetWindow<SelectHierarchyFolderEditor>(false, "Send To Folder");
+            var window = GetWindow<SelectHierarchyFolderEditor>(false, FolderEditorUtils.SendToFolderLabel);
             window.minSize = new Vector2(K_MIN_WIDTH, K_MIN_HEIGHT);
             window.Show();
         }
 
         private void OnEnable() {
             Selection.selectionChanged += Refresh;
-            EditorApplication.hierarchyChanged += Refresh;
+            EditorApplication.hierarchyChanged += OnHierarchyChanged;
         }
 
         private void OnDisable() {
             Selection.selectionChanged -= Refresh;
-            EditorApplication.hierarchyChanged -= Refresh;
+            EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+        }
+
+        private void OnHierarchyChanged() {
+            ScanFolders();
+            Refresh();
         }
 
         private void CreateGUI() {
@@ -64,10 +70,11 @@ namespace UnityHierarchyFolders.Editor {
             folderList.itemsChosen += _ => SendToFolder();
             columns.Add(CreateColumn("Select a Folder", folderList));
 
-            sendButton = new Button(SendToFolder) { text = "Send To Folder" };
+            sendButton = new Button(SendToFolder) { text = FolderEditorUtils.SendToFolderLabel };
             sendButton.AddToClassList("hf-send-window__send");
             root.Add(sendButton);
 
+            ScanFolders();
             Refresh();
             searchField.Focus();
         }
@@ -94,11 +101,18 @@ namespace UnityHierarchyFolders.Editor {
 
         private void BindFolderRow(VisualElement row, int index) {
             (Folder folder, string path) = folders[index];
-            row.Q<Image>("icon").image = HierarchyFolderIcon.ColoredFolderIcons(folder != null ? folder.ColorIndex : 0).closed;
+            row.Q<Image>("icon").image = HierarchyFolderIcon.ColoredFolderIcon(folder != null ? folder.ColorIndex : 0);
             row.Q<Label>("label").text = path;
         }
 
-        /// <summary>Rebuilds both lists from the live selection and scene, keeping the chosen folder if still valid.</summary>
+        private void ScanFolders() {
+            allFolders.Clear();
+            allFolders.AddRange(FindObjectsByType<Folder>(FindObjectsInactive.Include)
+                .Select(f => (f, GetPath(f.transform)))
+                .OrderBy(entry => entry.Item2, StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>Rebuilds both lists from the selection and search text, keeping the chosen folder if still valid.</summary>
         private void Refresh() {
             if (folderList == null)
                 return;
@@ -106,16 +120,13 @@ namespace UnityHierarchyFolders.Editor {
             Folder previouslyChosen = SelectedFolder;
 
             objectsToMove.Clear();
-            objectsToMove.AddRange(Selection.GetTransforms(SelectionMode.TopLevel | SelectionMode.Editable | SelectionMode.ExcludePrefab)
-                .Select(t => t.gameObject));
+            objectsToMove.AddRange(FolderEditorUtils.SelectedSceneTransforms().Select(t => t.gameObject));
 
             string filter = searchField.value;
             folders.Clear();
-            folders.AddRange(FindObjectsByType<Folder>(FindObjectsInactive.Include)
-                .Where(CanReceiveSelection)
-                .Select(f => (f, GetPath(f.transform)))
-                .Where(entry => string.IsNullOrEmpty(filter) || entry.Item2.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
-                .OrderBy(entry => entry.Item2, StringComparer.OrdinalIgnoreCase));
+            folders.AddRange(allFolders.Where(entry =>
+                entry.folder != null && CanReceiveSelection(entry.folder) &&
+                (string.IsNullOrEmpty(filter) || entry.path.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)));
 
             objectList.RefreshItems();
             folderList.RefreshItems();
@@ -159,7 +170,7 @@ namespace UnityHierarchyFolders.Editor {
                 return;
 
             foreach (GameObject go in objectsToMove)
-                Undo.SetTransformParent(go.transform, folder.transform, UndoName);
+                Undo.SetTransformParent(go.transform, folder.transform, FolderEditorUtils.SendToFolderLabel);
 
             Close();
         }

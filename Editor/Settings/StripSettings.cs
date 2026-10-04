@@ -10,69 +10,47 @@
     /// </summary>
     internal static class StripSettings
     {
-        private static UserSetting<StrippingMode> _playModeSetting;
-        private static UserSetting<StrippingMode> _buildSetting;
-        private static UserSetting<bool> _capitalizeName;
-        private static UserSetting<bool> _stripFoldersFromPrefabsInPlayMode;
-        private static UserSetting<bool> _stripFoldersFromPrefabsInBuild;
+        private static readonly UserSetting<StrippingMode> _playModeSetting =
+            Create(nameof(_playModeSetting), StrippingMode.DoNothing);
+        private static readonly UserSetting<StrippingMode> _buildSetting =
+            Create(nameof(_buildSetting), StrippingMode.Delete);
+        private static readonly UserSetting<bool> _capitalizeName = Create(nameof(_capitalizeName), true);
+        private static readonly UserSetting<bool> _stripFoldersFromPrefabsInPlayMode =
+            Create(nameof(_stripFoldersFromPrefabsInPlayMode), true);
+        private static readonly UserSetting<bool> _stripFoldersFromPrefabsInBuild =
+            Create(nameof(_stripFoldersFromPrefabsInBuild), true);
 
         public static StrippingMode PlayMode
         {
-            get => Get(ref _playModeSetting).value;
-            set => Set(ref _playModeSetting, value);
+            get => _playModeSetting.value;
+            set => _playModeSetting.SetValue(value, saveProjectSettingsImmediately: true);
         }
 
         public static StrippingMode Build
         {
-            get => Get(ref _buildSetting).value;
-            set => Set(ref _buildSetting, value);
+            get => _buildSetting.value;
+            set => _buildSetting.SetValue(value, saveProjectSettingsImmediately: true);
         }
 
         public static bool CapitalizeName
         {
-            get => Get(ref _capitalizeName).value;
-            set => Set(ref _capitalizeName, value);
+            get => _capitalizeName.value;
+            set => _capitalizeName.SetValue(value, saveProjectSettingsImmediately: true);
         }
 
         public static bool StripFoldersFromPrefabsInPlayMode
         {
-            get => Get(ref _stripFoldersFromPrefabsInPlayMode).value;
-            set => Set(ref _stripFoldersFromPrefabsInPlayMode, value);
+            get => _stripFoldersFromPrefabsInPlayMode.value;
+            set => _stripFoldersFromPrefabsInPlayMode.SetValue(value, saveProjectSettingsImmediately: true);
         }
 
         public static bool StripFoldersFromPrefabsInBuild
         {
-            get => Get(ref _stripFoldersFromPrefabsInBuild).value;
-            set => Set(ref _stripFoldersFromPrefabsInBuild, value);
+            get => _stripFoldersFromPrefabsInBuild.value;
+            set => _stripFoldersFromPrefabsInBuild.SetValue(value, saveProjectSettingsImmediately: true);
         }
 
-        private static UserSetting<T> Get<T>(ref UserSetting<T> setting)
-        {
-            InitializeIfNeeded();
-            return setting;
-        }
-
-        private static void Set<T>(ref UserSetting<T> setting, T value)
-        {
-            InitializeIfNeeded();
-            setting.SetValue(value, saveProjectSettingsImmediately: true);
-        }
-
-        private static void InitializeIfNeeded()
-        {
-            if (_playModeSetting != null)
-                return;
-
-            Settings settings = PackageSettings.Instance;
-
-            _playModeSetting = Create(settings, nameof(_playModeSetting), StrippingMode.DoNothing);
-            _buildSetting = Create(settings, nameof(_buildSetting), StrippingMode.Delete);
-            _capitalizeName = Create(settings, nameof(_capitalizeName), true);
-            _stripFoldersFromPrefabsInPlayMode = Create(settings, nameof(_stripFoldersFromPrefabsInPlayMode), true);
-            _stripFoldersFromPrefabsInBuild = Create(settings, nameof(_stripFoldersFromPrefabsInBuild), true);
-        }
-
-        private static UserSetting<T> Create<T>(Settings settings, string key, T defaultValue) =>
-            new UserSetting<T>(settings, key, defaultValue, SettingsScope.Project);
+        private static UserSetting<T> Create<T>(string key, T defaultValue) =>
+            new UserSetting<T>(PackageSettings.Instance, key, defaultValue, SettingsScope.Project);
     }
 }

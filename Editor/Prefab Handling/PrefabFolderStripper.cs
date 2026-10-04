@@ -1,6 +1,5 @@
 ﻿namespace UnityHierarchyFolders.Editor
 {
-    using System;
     using System.IO;
     using System.Linq;
     using Runtime;
@@ -66,7 +65,7 @@
             var dependentAssetsPaths = AssetDatabase.GetDependencies(scenePaths, true);
 
             var prefabsWithLabel = dependentAssetsPaths.Where(path =>
-                    AssetDatabase.GetLabels(GetAssetForLabel(path)).Contains(LabelHandler.FolderPrefabLabel))
+                    AssetDatabase.GetLabels(AssetDatabase.GUIDFromAssetPath(path)).Contains(LabelHandler.FolderPrefabLabel))
                 .ToArray();
 
             ChangedPrefabs.Initialize(prefabsWithLabel.Length);
@@ -80,8 +79,6 @@
 
             // Serialization of ChangedPrefabs is not needed here because domain doesn't reload before changes are reverted.
         }
-
-        private static GUID GetAssetForLabel(string path) => AssetDatabase.GUIDFromAssetPath(path);
 
         private static void StripFoldersFromAllPrefabs()
         {
@@ -104,13 +101,13 @@
 
         private static void StripFoldersFromPrefab(string prefabPath, StrippingMode strippingMode)
         {
-            using (var temp = new EditPrefabContentsScope(prefabPath))
+            using (var temp = new PrefabUtility.EditPrefabContentsScope(prefabPath))
             {
-                var folders = temp.PrefabContentsRoot.GetComponentsInChildren<Folder>();
+                var folders = temp.prefabContentsRoot.GetComponentsInChildren<Folder>();
 
                 foreach (Folder folder in folders)
                 {
-                    if (folder.gameObject == temp.PrefabContentsRoot)
+                    if (folder.gameObject == temp.prefabContentsRoot)
                     {
                         Debug.LogWarning(
                             $"Hierarchy will not flatten for {prefabPath} because its root is a folder. " +
@@ -141,28 +138,6 @@
             }
 
             AssetDatabase.Refresh();
-        }
-
-        /// <summary>
-        /// A copy of <see cref="PrefabUtility.EditPrefabContentsScope"/> for backwards compatibility with Unity 2019.
-        /// </summary>
-        private readonly struct EditPrefabContentsScope : IDisposable
-        {
-            public readonly GameObject PrefabContentsRoot;
-
-            private readonly string _assetPath;
-
-            public EditPrefabContentsScope(string assetPath)
-            {
-                PrefabContentsRoot = PrefabUtility.LoadPrefabContents(assetPath);
-                _assetPath = assetPath;
-            }
-
-            public void Dispose()
-            {
-                PrefabUtility.SaveAsPrefabAsset(PrefabContentsRoot, _assetPath);
-                PrefabUtility.UnloadPrefabContents(PrefabContentsRoot);
-            }
         }
     }
 }
