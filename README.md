@@ -19,7 +19,12 @@ To add this project, add a [git dependency][1] in your `manifest.json`:
 }
 ```
 
-A "Create Folder" menu item should show up in the GameObject menu. Add
+A "New Folder" menu item should show up in the GameObject menu. In the Hierarchy
+right-click menu the folder commands get their own section: **New Folder**, plus
+**New Folder With Selection** (moves the selection into the new folder) and
+**Send To Folder** when something is selected. Cmd/Ctrl+G folders the selection,
+or creates an empty folder if nothing is selected (rebind under Shortcuts →
+Hierarchy Folders). Add
 `Tests/Example.unity` to your current scene for an example of what hierarchy
 folders can do for you.
 

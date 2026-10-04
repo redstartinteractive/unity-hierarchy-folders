@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityHierarchyFolders.Runtime;
@@ -9,41 +10,84 @@ namespace UnityHierarchyFolders.Editor
 {
     public static class FolderEditorUtils 
     {
-        private const string _actionNewFolder = "Create Folder %G";
-        private const string _actionSelectionFolder = "Move To New Folder";
-        private const string _actionSendToFolderWindow = "Send To Folder %#&M";
+        internal const string NewFolderLabel = "New Folder";
+        internal const string NewFolderWithSelectionLabel = "New Folder With Selection";
+        internal const string SendToFolderLabel = "Send To Folder";
+        internal const string SendToFolderMenuName = SendToFolderLabel + " %#&M";
 
-        /// <summary>Add new folder "prefab". If objects are selected they will be placed inside the new folder.</summary>
-        [MenuItem("GameObject/" + _actionNewFolder, isValidateFunction: false, priority: 0)]
-        public static void AddFolderPrefab(MenuCommand command) 
+        [MenuItem("GameObject/" + NewFolderLabel, isValidateFunction: false, priority: 0)]
+        public static void CreateFolderMenuItem(MenuCommand command)
         {
-            // Prevent running this command on each selected object individually
-            if (Selection.objects.Length > 1)
+            if (IsRepeatedForMultiSelection(command))
+                return;
+
+            CreateFolder(includeSelection: false);
+        }
+
+        [MenuItem("GameObject/" + NewFolderWithSelectionLabel, isValidateFunction: false, priority: 0)]
+        public static void NewFolderWithSelectionMenuItem(MenuCommand command)
+        {
+            if (IsRepeatedForMultiSelection(command))
+                return;
+
+            CreateFolder(includeSelection: true);
+        }
+
+        [MenuItem("GameObject/" + NewFolderWithSelectionLabel, isValidateFunction: true, priority: 0)]
+        public static bool NewFolderWithSelectionValidate() => HasSceneSelection();
+
+        /// <summary>Folders the current selection if there is one, otherwise just creates a folder.</summary>
+        [Shortcut("Hierarchy Folders/New Folder", KeyCode.G, ShortcutModifiers.Action)]
+        private static void NewFolderShortcut() => CreateFolder(includeSelection: HasSceneSelection());
+
+        internal static bool HasSceneSelection() => SelectedSceneTransforms().Length > 0;
+
+        /// <summary>
+        /// Creates a folder next to the active selection (or at the scene root if nothing is selected), optionally
+        /// moving the selected objects into it.
+        /// </summary>
+        public static GameObject CreateFolder(bool includeSelection)
+        {
+            string undoName = includeSelection ? NewFolderWithSelectionLabel : NewFolderLabel;
+            Transform[] selection = SelectedSceneTransforms();
+            Transform anchor = selection.Length == 0 ? null
+                : Selection.activeTransform != null ? Selection.activeTransform : selection[0];
+
+            var folder = new GameObject("Folder", typeof(Folder));
+            Undo.RegisterCreatedObjectUndo(folder, undoName);
+
+            if (anchor != null)
             {
-                if (command.context && command.context != Selection.objects[0])
+                if (anchor.parent != null)
+                    Undo.SetTransformParent(folder.transform, anchor.parent, undoName);
+                else
+                    SceneManager.MoveGameObjectToScene(folder, anchor.gameObject.scene);
+
+                folder.transform.SetSiblingIndex(anchor.GetSiblingIndex() + 1);
+            }
+
+            if (includeSelection)
+            {
+                foreach (Transform t in selection)
                 {
-                    return;
+                    Undo.SetTransformParent(t, folder.transform, undoName);
                 }
             }
 
-            var obj = new GameObject { name = "Folder" };
-            obj.AddComponent<Folder>();
-            Undo.RegisterCreatedObjectUndo(obj, _actionNewFolder);
-
-            if(Selection.activeGameObject)
-            {
-                obj.transform.SetSiblingIndex(Selection.activeGameObject.transform.GetSiblingIndex() + 1);
-            }
-
-            foreach(GameObject go in Selection.gameObjects)
-            {
-                Undo.SetTransformParent(go.transform, obj.transform, _actionSelectionFolder);
-            }
+            return folder;
         }
+
+        // Editable top-level scene objects only, so a child isn't pulled out of a selected parent.
+        private static Transform[] SelectedSceneTransforms() =>
+            Selection.GetTransforms(SelectionMode.TopLevel | SelectionMode.Editable | SelectionMode.ExcludePrefab);
+
+        // A GameObject/ menu item runs once per selected object; only act on the first.
+        private static bool IsRepeatedForMultiSelection(MenuCommand command) =>
+            Selection.objects.Length > 1 && command.context && command.context != Selection.objects[0];
 
         /// <summary>Add new folder "prefab".</summary>
         /// <param name="command">Menu command information.</param>
-        [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: false, priority: 0)]
+        [MenuItem("GameObject/" + SendToFolderMenuName, isValidateFunction: false, priority: 0)]
         public static void SendToFolder(MenuCommand command)
         {
             if(Selection.objects.Length > 1) 
@@ -57,8 +101,10 @@ namespace UnityHierarchyFolders.Editor
             SelectHierarchyFolderEditor.ShowWindow();
         }
 
-        [MenuItem("GameObject/" + _actionSendToFolderWindow, isValidateFunction: true, priority: 0)]
-        public static bool SendToFolderValidate(MenuCommand command) 
+        [MenuItem("GameObject/" + SendToFolderMenuName, isValidateFunction: true, priority: 0)]
+        public static bool SendToFolderValidate(MenuCommand command) => CanSendToFolder();
+
+        internal static bool CanSendToFolder()
         {
 #if !UNITY_6000_5_OR_NEWER
             return Selection.objects.Length > 0 && Object.FindObjectsByType<Folder>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length > 0;
