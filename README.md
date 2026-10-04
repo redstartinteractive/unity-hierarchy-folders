@@ -44,7 +44,7 @@ To install OpenUPM, please see the [documentation][2].
 
 ## Stripping Modes
 
-You can choose how exactly the folder will be removed from the hierarchy in **Preferences -> Hierarchy Folders**.
+You can choose how exactly the folder will be removed from the hierarchy in **Project Settings -> Hierarchy Folders**. Stripping settings are stored per project in `ProjectSettings/Packages/io.redstart.hierarchy-folders/Settings.json`, so commit that file to share them with your team.
 
 The following stripping modes are available:
 
@@ -55,7 +55,15 @@ The following stripping modes are available:
 
 ## Stripping folders from prefabs
 
-With this plugin, it is possible to strip folders from prefabs that are not present in the scene but are instantiated at runtime. Upon entering Play Mode, the plugin goes through all prefabs containing folders and strips them. On exiting Play Mode, the changes are reverted. It shouldn't add significant overhead unless you have thousands of prefabs with folders inside, but if entering Play Mode takes too long, you can try disabling this option in **Preferences -> Hierarchy Folders**. You can also choose whether to strip folders from prefabs before they are packed into a build.
+With this plugin, it is possible to strip folders from prefabs that are not present in the scene but are instantiated at runtime. Upon entering Play Mode, the plugin goes through all prefabs containing folders and strips them. On exiting Play Mode, the changes are reverted. It shouldn't add significant overhead unless you have thousands of prefabs with folders inside, but if entering Play Mode takes too long, you can try disabling this option in **Project Settings -> Hierarchy Folders**. You can also choose whether to strip folders from prefabs before they are packed into a build.
+
+## Display preferences
+
+How folders look in the Hierarchy window is a per-user preference, under **Preferences -> Hierarchy Folders**:
+
+- **Show Folder Icons** - Replace the folder GameObject's icon with a folder icon tinted with its color.
+- **Show Colored Row Backgrounds** *(new Hierarchy window, Unity 6.5+)* - Tint the whole row of folders that have a color set. Folders without a color are never tinted.
+- **Row Background Opacity** - How strongly the row is tinted.
 
 ## Possible FAQs
 

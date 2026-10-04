@@ -4,11 +4,12 @@
     using UnityEditor;
     using UnityEditor.SettingsManagement;
 
+    /// <summary>
+    /// Folder stripping settings. These change how the project behaves in Play Mode and builds, so they are
+    /// project-scoped and meant to be committed alongside the project.
+    /// </summary>
     internal static class StripSettings
     {
-        private const string PackageName = "io.redstart.hierarchy-folders";
-
-        private static Settings _instance;
         private static UserSetting<StrippingMode> _playModeSetting;
         private static UserSetting<StrippingMode> _buildSetting;
         private static UserSetting<bool> _capitalizeName;
@@ -17,79 +18,61 @@
 
         public static StrippingMode PlayMode
         {
-            get
-            {
-                InitializeIfNeeded();
-                return _playModeSetting.value;
-            }
-
-            set => _playModeSetting.value = value;
+            get => Get(ref _playModeSetting).value;
+            set => Set(ref _playModeSetting, value);
         }
 
         public static StrippingMode Build
         {
-            get
-            {
-                InitializeIfNeeded();
-                return _buildSetting.value;
-            }
-
-            set => _buildSetting.value = value;
+            get => Get(ref _buildSetting).value;
+            set => Set(ref _buildSetting, value);
         }
 
         public static bool CapitalizeName
         {
-            get
-            {
-                InitializeIfNeeded();
-                return _capitalizeName.value;
-            }
-
-            set => _capitalizeName.value = value;
+            get => Get(ref _capitalizeName).value;
+            set => Set(ref _capitalizeName, value);
         }
 
         public static bool StripFoldersFromPrefabsInPlayMode
         {
-            get
-            {
-                InitializeIfNeeded();
-                return _stripFoldersFromPrefabsInPlayMode.value;
-            }
-
-            set => _stripFoldersFromPrefabsInPlayMode.value = value;
+            get => Get(ref _stripFoldersFromPrefabsInPlayMode).value;
+            set => Set(ref _stripFoldersFromPrefabsInPlayMode, value);
         }
 
         public static bool StripFoldersFromPrefabsInBuild
         {
-            get
-            {
-                InitializeIfNeeded();
-                return _stripFoldersFromPrefabsInBuild.value;
-            }
+            get => Get(ref _stripFoldersFromPrefabsInBuild).value;
+            set => Set(ref _stripFoldersFromPrefabsInBuild, value);
+        }
 
-            set => _stripFoldersFromPrefabsInBuild.value = value;
+        private static UserSetting<T> Get<T>(ref UserSetting<T> setting)
+        {
+            InitializeIfNeeded();
+            return setting;
+        }
+
+        private static void Set<T>(ref UserSetting<T> setting, T value)
+        {
+            InitializeIfNeeded();
+            setting.SetValue(value, saveProjectSettingsImmediately: true);
         }
 
         private static void InitializeIfNeeded()
         {
-            if (_instance != null)
+            if (_playModeSetting != null)
                 return;
 
-            _instance = new Settings(PackageName);
+            Settings settings = PackageSettings.Instance;
 
-            _playModeSetting = new UserSetting<StrippingMode>(_instance, nameof(_playModeSetting),
-                StrippingMode.DoNothing, SettingsScope.User);
-
-            _buildSetting = new UserSetting<StrippingMode>(_instance, nameof(_buildSetting),
-                StrippingMode.Delete, SettingsScope.User);
-
-            _capitalizeName = new UserSetting<bool>(_instance, nameof(_capitalizeName), true, SettingsScope.User);
-
-            _stripFoldersFromPrefabsInPlayMode = new UserSetting<bool>(_instance,
-                nameof(_stripFoldersFromPrefabsInPlayMode), true, SettingsScope.User);
-
-            _stripFoldersFromPrefabsInBuild = new UserSetting<bool>(_instance,
-                nameof(_stripFoldersFromPrefabsInBuild), true, SettingsScope.User);
+            _playModeSetting = Create(settings, nameof(_playModeSetting), StrippingMode.DoNothing);
+            _buildSetting = Create(settings, nameof(_buildSetting), StrippingMode.Delete);
+            _capitalizeName = Create(settings, nameof(_capitalizeName), true);
+            _stripFoldersFromPrefabsInPlayMode = Create(settings, nameof(_stripFoldersFromPrefabsInPlayMode), true);
+            _stripFoldersFromPrefabsInBuild = Create(settings, nameof(_stripFoldersFromPrefabsInBuild), true);
         }
+
+        private static UserSetting<T> Create<T>(Settings settings, string key, T defaultValue) =>
+            new UserSetting<T>(settings, key, defaultValue, SettingsScope.Project);
     }
 }

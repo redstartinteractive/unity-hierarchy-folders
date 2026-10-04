@@ -8,82 +8,127 @@
 
     internal static class SettingsDrawer
     {
-        /// <summary>
-        /// Field names of corresponding settings. Each field name can be accessed by the name of the setting variable.
-        /// </summary>
-        private static readonly Dictionary<string, string> _fieldNames = new Dictionary<string, string>
-        {
-            { nameof(StripSettings.PlayMode), "Play Mode Stripping Type" },
-            { nameof(StripSettings.Build), "Build Stripping Type" },
-            { nameof(StripSettings.CapitalizeName), "Capitalize Folder Names" },
-            { nameof(StripSettings.StripFoldersFromPrefabsInPlayMode), "Strip folders from prefabs in Play Mode" },
-            { nameof(StripSettings.StripFoldersFromPrefabsInBuild), "Strip folders from prefabs in build" },
-        };
+        private const string ProviderPath = "Hierarchy Folders";
 
-        private static readonly GUIContent _buildStrippingName = new GUIContent(_fieldNames[nameof(StripSettings.Build)]);
+        private static readonly GUIContent _playModeLabel = new GUIContent("Play Mode Stripping Type");
+        private static readonly GUIContent _buildLabel = new GUIContent("Build Stripping Type");
+        private static readonly GUIContent _capitalizeLabel = new GUIContent("Capitalize Folder Names");
+        private static readonly GUIContent _prefabsInPlayModeLabel = new GUIContent("Strip folders from prefabs in Play Mode");
+        private static readonly GUIContent _prefabsInBuildLabel = new GUIContent("Strip folders from prefabs in build");
+
+        private static readonly GUIContent _folderIconsLabel = new GUIContent("Show Folder Icons",
+            "Replace the GameObject icon of folders with a folder icon tinted with the folder's color.");
+        private static readonly GUIContent _rowBackgroundsLabel = new GUIContent("Show Colored Row Backgrounds",
+            "Tint the Hierarchy row of folders that have a color set.");
+        private static readonly GUIContent _rowOpacityLabel = new GUIContent("Row Background Opacity");
 
         [SettingsProvider]
-        public static SettingsProvider CreateSettingsProvider()
+        public static SettingsProvider CreateProjectSettingsProvider()
         {
-            return new SettingsProvider("Preferences/Hierarchy Folders", SettingsScope.User)
+            return new SettingsProvider("Project/" + ProviderPath, SettingsScope.Project)
             {
-                guiHandler = OnGUI,
-                keywords = GetKeywords()
+                guiHandler = OnProjectGUI,
+                keywords = GetKeywords(_playModeLabel, _buildLabel, _capitalizeLabel, _prefabsInPlayModeLabel,
+                    _prefabsInBuildLabel)
             };
         }
 
-        private static void OnGUI(string searchContext)
+        [SettingsProvider]
+        public static SettingsProvider CreatePreferencesProvider()
         {
-            StripSettings.PlayMode = (StrippingMode) EditorGUILayout.EnumPopup(
-                _fieldNames[nameof(StripSettings.PlayMode)], StripSettings.PlayMode);
-
-            if (StripSettings.PlayMode == StrippingMode.ReplaceWithSeparator)
+            return new SettingsProvider("Preferences/" + ProviderPath, SettingsScope.User)
             {
-                StripSettings.CapitalizeName = EditorGUILayout.Toggle(
-                    _fieldNames[nameof(StripSettings.CapitalizeName)], StripSettings.CapitalizeName);
-            }
+                guiHandler = OnPreferencesGUI,
+                keywords = GetKeywords(_folderIconsLabel, _rowBackgroundsLabel, _rowOpacityLabel)
+            };
+        }
 
-            StripSettings.Build = (StrippingMode) EditorGUILayout.EnumPopup(
-                _buildStrippingName, StripSettings.Build, TypeCanBeInBuild, true);
-
-            EditorGUILayout.Space(EditorGUIUtility.singleLineHeight);
-
-            if (StripSettings.StripFoldersFromPrefabsInPlayMode)
-            {
-                EditorGUILayout.HelpBox(
-                    "If you notice that entering play mode takes too long, you can try disabling this option. " +
-                    "Folders will not be stripped from prefabs that are instantiated at runtime, but if performance in " +
-                    "Play Mode does not matter, you will be fine.", MessageType.Info);
-            }
-
+        private static void OnProjectGUI(string searchContext)
+        {
             using (new TemporaryLabelWidth(230f))
             {
-                StripSettings.StripFoldersFromPrefabsInPlayMode =
-                    EditorGUILayout.Toggle(_fieldNames[nameof(StripSettings.StripFoldersFromPrefabsInPlayMode)], StripSettings.StripFoldersFromPrefabsInPlayMode);
+                EditorGUI.BeginChangeCheck();
+                var playMode = (StrippingMode) EditorGUILayout.EnumPopup(_playModeLabel, StripSettings.PlayMode);
+                if (EditorGUI.EndChangeCheck())
+                    StripSettings.PlayMode = playMode;
 
-                StripSettings.StripFoldersFromPrefabsInBuild =
-                    EditorGUILayout.Toggle(_fieldNames[nameof(StripSettings.StripFoldersFromPrefabsInBuild)], StripSettings.StripFoldersFromPrefabsInBuild);
+                if (StripSettings.PlayMode == StrippingMode.ReplaceWithSeparator)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool capitalize = EditorGUILayout.Toggle(_capitalizeLabel, StripSettings.CapitalizeName);
+                    if (EditorGUI.EndChangeCheck())
+                        StripSettings.CapitalizeName = capitalize;
+                }
+
+                EditorGUI.BeginChangeCheck();
+                var build = (StrippingMode) EditorGUILayout.EnumPopup(
+                    _buildLabel, StripSettings.Build, TypeCanBeInBuild, true);
+                if (EditorGUI.EndChangeCheck())
+                    StripSettings.Build = build;
+
+                EditorGUILayout.Space(EditorGUIUtility.singleLineHeight);
+
+                if (StripSettings.StripFoldersFromPrefabsInPlayMode)
+                {
+                    EditorGUILayout.HelpBox(
+                        "If you notice that entering play mode takes too long, you can try disabling this option. " +
+                        "Folders will not be stripped from prefabs that are instantiated at runtime, but if performance in " +
+                        "Play Mode does not matter, you will be fine.", MessageType.Info);
+                }
+
+                EditorGUI.BeginChangeCheck();
+                bool prefabsInPlayMode = EditorGUILayout.Toggle(_prefabsInPlayModeLabel,
+                    StripSettings.StripFoldersFromPrefabsInPlayMode);
+                if (EditorGUI.EndChangeCheck())
+                    StripSettings.StripFoldersFromPrefabsInPlayMode = prefabsInPlayMode;
+
+                EditorGUI.BeginChangeCheck();
+                bool prefabsInBuild = EditorGUILayout.Toggle(_prefabsInBuildLabel,
+                    StripSettings.StripFoldersFromPrefabsInBuild);
+                if (EditorGUI.EndChangeCheck())
+                    StripSettings.StripFoldersFromPrefabsInBuild = prefabsInBuild;
             }
         }
 
-        private static HashSet<string> GetKeywords()
+        private static void OnPreferencesGUI(string searchContext)
+        {
+            using (new TemporaryLabelWidth(230f))
+            {
+                EditorGUI.BeginChangeCheck();
+                bool showIcons = EditorGUILayout.Toggle(_folderIconsLabel, DisplaySettings.ShowFolderIcons);
+                if (EditorGUI.EndChangeCheck())
+                    DisplaySettings.ShowFolderIcons = showIcons;
+
+#if UNITY_6000_5_OR_NEWER
+                EditorGUI.BeginChangeCheck();
+                bool showBackgrounds = EditorGUILayout.Toggle(_rowBackgroundsLabel, DisplaySettings.ShowRowBackgrounds);
+                if (EditorGUI.EndChangeCheck())
+                    DisplaySettings.ShowRowBackgrounds = showBackgrounds;
+
+                using (new EditorGUI.DisabledScope(!DisplaySettings.ShowRowBackgrounds))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    float opacity = EditorGUILayout.Slider(_rowOpacityLabel, DisplaySettings.RowBackgroundOpacity, 0f, 1f);
+                    if (EditorGUI.EndChangeCheck())
+                        DisplaySettings.RowBackgroundOpacity = opacity;
+                }
+#endif
+            }
+        }
+
+        private static HashSet<string> GetKeywords(params GUIContent[] labels)
         {
             var keywords = new HashSet<string>();
 
-            foreach (string fieldName in _fieldNames.Values)
+            foreach (GUIContent label in labels)
             {
-                keywords.AddWords(fieldName);
+                foreach (string word in label.text.Split(' '))
+                {
+                    keywords.Add(word);
+                }
             }
 
             return keywords;
-        }
-
-        private static void AddWords(this HashSet<string> set, string phrase)
-        {
-            foreach (string word in phrase.Split(' '))
-            {
-                set.Add(word);
-            }
         }
 
         private static bool TypeCanBeInBuild(Enum enumValue)

@@ -67,6 +67,7 @@ namespace UnityHierarchyFolders.Editor {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.hierarchyWindowItemOnGUI += HandleDrawIcon;
             EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            DisplaySettings.Changed += EditorApplication.RepaintHierarchyWindow;
             UpdateExpandedIDs();
 #endif
         }
@@ -174,7 +175,7 @@ namespace UnityHierarchyFolders.Editor {
         }
 #if !UNITY_6000_5_OR_NEWER
         private static void HandleDrawIcon(int instanceId, Rect itemRect) {
-            if(Event.current.type == EventType.Repaint) {
+            if(Event.current.type == EventType.Repaint && DisplaySettings.ShowFolderIcons) {
                 DrawIcon(instanceId, itemRect);
             }
         }
