@@ -101,16 +101,23 @@ namespace UnityHierarchyFolders.Editor
             HasSceneSelection() && Object.FindAnyObjectByType<Folder>(FindObjectsInactive.Include) != null;
     }
 
-    public class FolderOnBuild : IProcessSceneWithReport 
+    // Bump the version whenever stripping changes so Scriptable Build Pipeline caches reprocess scenes.
+    [BuildCallbackVersion(2)]
+    public class FolderOnBuild : IProcessSceneWithReport
     {
         public int callbackOrder => 0;
 
-        public void OnProcessScene(Scene scene, BuildReport report) 
+        public void OnProcessScene(Scene scene, BuildReport report)
         {
-            var strippingMode = report == null ? StripSettings.PlayMode : StripSettings.Build;
-            foreach(var folder in Object.FindObjectsByType<Folder>(FindObjectsInactive.Include))
+            // Addressables AssetBundle builds also pass a null report, so only entering Play Mode counts as Play Mode.
+            bool enteringPlayMode = report == null && EditorApplication.isPlayingOrWillChangePlaymode;
+            var strippingMode = enteringPlayMode ? StripSettings.PlayMode : StripSettings.Build;
+            foreach (var root in scene.GetRootGameObjects())
             {
-                folder.Flatten(strippingMode, StripSettings.CapitalizeName);
+                foreach (var folder in root.GetComponentsInChildren<Folder>(includeInactive: true))
+                {
+                    folder.Flatten(strippingMode, StripSettings.CapitalizeName);
+                }
             }
         }
     }
